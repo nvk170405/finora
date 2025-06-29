@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Globe } from 'lucide-react';
+import { Bell, Globe, LogOut } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -164,9 +164,9 @@ export const TopBar: React.FC = () => {
             handleLogout();
             setIsMenuOpen(false);
           }}
-          className="text-light-text dark:text-dark-text hover:text-lime-accent transition-colors text-left"
+          className="text-light-text p-2 rounded-md dark:text-dark-text hover:text-lime-accent transition-colors text-left"
         >
-          Logout
+          <LogOut size="20" />
         </button>
 
         {/* User Avatar */}

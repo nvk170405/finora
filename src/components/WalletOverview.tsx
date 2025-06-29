@@ -22,7 +22,7 @@ export const WalletOverview: React.FC = () => {
         className="flex items-center justify-between"
       >
         <div>
-          <h2 className="text-3xl font-bold text-light-text dark:text-dark-text font-editorial">Portfolio Overview</h2>
+          <h2 className="text-3xl font-montserrat font-bold text-light-text dark:text-dark-text font-editorial">Portfolio Overview</h2>
           <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">Your global currency positions</p>
         </div>
         <motion.button

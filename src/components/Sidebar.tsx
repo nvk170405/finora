@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { Link } from 'react-router-dom';
 
 interface SidebarProps {
   activeSection: string;
@@ -54,10 +55,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
         >
           {!isCollapsed && (
             <div>
-              <h1 className="text-lg font-bold text-lime-accent font-editorial">Finora</h1>
-              <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                Financial Platform
-              </p>
+               <Link to="/" className="flex items-center space-x-2">
+                          <div className="p-1 bg-lime-accent rounded-lg">
+                            <TrendingUp className="w-6 h-6 font-montserrat text-light-base dark:text-dark-base" />
+                          </div>
+                          <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">Finora</span>
+                        </Link>
+              
+              
             </div>
           )}
         </motion.div>
