@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TrendingUp, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-
+import { BsGoogle, BsApple, BsMeta } from 'react-icons/bs';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -155,7 +155,7 @@ export const LoginPage: React.FC = () => {
               disabled={loading}
               className="w-full flex items-center justify-center space-x-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border py-3 rounded-xl hover:border-lime-accent/30 transition-all disabled:opacity-50"
             >
-              <span className="text-xl">🔍</span>
+              <span className="text-xl"><BsGoogle className='mb-1' /></span>
               <span className="text-light-text dark:text-dark-text">Continue with Google</span>
             </button>
 
@@ -164,7 +164,7 @@ export const LoginPage: React.FC = () => {
               disabled={loading}
               className="w-full flex items-center justify-center space-x-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border py-3 rounded-xl hover:border-lime-accent/30 transition-all disabled:opacity-50"
             >
-              <span className="text-xl">🍎</span>
+              <span className="text-xl"><BsApple className='mb-1' /></span>
               <span className="text-light-text dark:text-dark-text">Continue with Apple</span>
             </button>
 
@@ -173,7 +173,7 @@ export const LoginPage: React.FC = () => {
               disabled={loading}
               className="w-full flex items-center justify-center space-x-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border py-3 rounded-xl hover:border-lime-accent/30 transition-all disabled:opacity-50"
             >
-              <span className="text-xl">📘</span>
+              <span className="text-xl"><BsMeta className='mb-1' /></span>
               <span className="text-light-text dark:text-dark-text">Continue with Meta</span>
             </button>
           </div>
