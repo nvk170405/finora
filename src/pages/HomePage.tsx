@@ -15,6 +15,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { Header } from '../components/Header';
+import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 
 const features = [
   {
@@ -73,17 +74,28 @@ const testimonials = [
 export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen">
+      
+
       <Header />
       
       {/* Hero Section */}
-      <section className="font-montserrat pt-52 pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="relative min-h-[90vh] overflow-hidden z-10 text-white pt-52 pb-16 px-4 sm:px-6 lg:px-8 font-montserrat">
+        <div className="absolute inset-0 -z-10">
+          <img
+            src="/assets/bg-gradient.jpg"
+            alt="Background"
+            className="w-full h-full object-cover object-center opacity-100"
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-black/60"></div>
+        </div>
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-4xl md:text-6xl font-extrabold text-light-text dark:text-dark-text font-montserrat mb-6"
+              className="text-4xl md:text-6xl z-50 font-extrabold text-light-text dark:text-dark-text font-montserrat mb-6"
             >
               Smart Financial Management
               <span className="block text-lime-accent">Made Simple</span>
@@ -107,13 +119,13 @@ export const HomePage: React.FC = () => {
             >
               <Link
                 to="/signup"
-                className="bg-lime-accent text-light-base dark:text-dark-base px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-glow transition-all flex items-center space-x-2"
+                className="bg-lime-accent z-20 text-light-base dark:text-dark-base px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-glow transition-all flex items-center space-x-2"
               >
                 <span>Start Free Trial</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
               
-              <button className="flex items-center space-x-2 text-light-text dark:text-dark-text hover:text-lime-accent transition-colors">
+              <button className="flex z-20 items-center space-x-2 text-light-text dark:text-dark-text hover:text-lime-accent transition-colors">
                 <Download className="w-5 h-5" />
                 <span>Download App</span>
               </button>
@@ -148,7 +160,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="font-montserrat py-16 px-4 sm:px-6 lg:px-8 bg-light-surface/50 dark:bg-dark-surface/50">
+      <section id="features" className="font-montserrat py-16 px-4 sm:px-6 lg:px-8 bg-light-surface/50 dark:bg-black">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -192,7 +204,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-16 px-4 sm:px-6 lg:px-8">
+      <section id="pricing" className="py-16 px-4 dark:bg-black sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -306,7 +318,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-light-surface/50 dark:bg-dark-surface/50">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-light-surface/50 dark:bg-black">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -357,8 +369,8 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 dark:bg-black">
+        <div className="max-w-4xl mx-auto text-center dark:bg-dark-surface/20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
