@@ -52,7 +52,7 @@ export const Pricing: React.FC = () => {
             Choose Your Plan
           </h1>
           <p className="text-xl text-light-text-secondary dark:text-dark-text-secondary">
-            Select a subscription to unlock the full power of Finora
+            Select a subscription to unlock the full power of FinoraX
           </p>
         </motion.div>
 

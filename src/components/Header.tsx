@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
             <div className="p-2 bg-lime-accent rounded-lg">
               <TrendingUp className="w-6 h-6 font-montserrat text-light-base dark:text-dark-base" />
             </div>
-            <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">Finora</span>
+            <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">FinoraX</span>
           </Link>
 
           {/* Desktop Navigation */}

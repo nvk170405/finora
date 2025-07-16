@@ -1,7 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TrendingUp, Mail, Lock, User, EyeOffIcon,  } from 'lucide-react';
+import { TrendingUp, Mail, Lock, User  } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { BsGoogle, BsApple, BsMeta } from "react-icons/bs";
 export const SignUpPage: React.FC = () => {
@@ -54,14 +54,14 @@ export const SignUpPage: React.FC = () => {
             <div className="p-2 bg-lime-accent rounded-lg">
               <TrendingUp className="w-6 h-6 text-light-base dark:text-dark-base" />
             </div>
-            <span className="text-2xl font-bold text-lime-accent font-editorial">Finora</span>
+            <span className="text-2xl font-bold text-lime-accent font-editorial">FinoraX</span>
           </Link>
 
           <h2 className="text-3xl font-bold text-light-text dark:text-dark-text font-editorial">
             Create an Account
           </h2>
           <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">
-            Start your financial journey with Finora
+            Start your financial journey with FinoraX
           </p>
         </motion.div>
 

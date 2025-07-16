@@ -59,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
                           <div className="p-1 bg-lime-accent rounded-lg">
                             <TrendingUp className="w-6 h-6 font-montserrat text-light-base dark:text-dark-base" />
                           </div>
-                          <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">Finora</span>
+                          <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">FinoraX</span>
                         </Link>
               
               

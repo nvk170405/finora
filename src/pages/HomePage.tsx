@@ -54,7 +54,7 @@ const testimonials = [
     name: 'Sarah Chen',
     role: 'Digital Nomad',
     avatar: '👩‍💻',
-    content: 'Finora has revolutionized how I manage my finances across different countries. The multi-currency support is flawless!'
+    content: 'FinoraX has revolutionized how I manage my finances across different countries. The multi-currency support is flawless!'
   },
   {
     name: 'Marcus Rodriguez',
@@ -66,7 +66,7 @@ const testimonials = [
     name: 'Emily Watson',
     role: 'Freelance Designer',
     avatar: '👩‍🎨',
-    content: 'Managing client payments from different countries used to be a nightmare. Finora made it incredibly simple.'
+    content: 'Managing client payments from different countries used to be a nightmare. FinoraX made it incredibly simple.'
   }
 ];
 
@@ -95,7 +95,7 @@ export const HomePage: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-xl text-light-text-secondary dark:text-dark-text-secondary mb-8 max-w-3xl mx-auto"
             >
-              Take control of your global finances with Finora's intelligent platform. 
+              Take control of your global finances with FinoraX's intelligent platform. 
               Multi-currency support, real-time analytics, and seamless international transfers.
             </motion.p>
             
@@ -319,7 +319,7 @@ export const HomePage: React.FC = () => {
               Trusted by Thousands
             </h2>
             <p className="text-xl text-light-text-secondary dark:text-dark-text-secondary max-w-3xl mx-auto">
-              See what our users have to say about their experience with Finora.
+              See what our users have to say about their experience with FinoraX.
             </p>
           </motion.div>
           
@@ -370,7 +370,7 @@ export const HomePage: React.FC = () => {
               Ready to Transform Your Finances?
             </h2>
             <p className="text-xl text-light-text-secondary dark:text-dark-text-secondary mb-8">
-              Join thousands of users who have already simplified their financial management with Finora.
+              Join thousands of users who have already simplified their financial management with FinoraX.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
@@ -398,12 +398,12 @@ export const HomePage: React.FC = () => {
               <div className="p-2 bg-lime-accent rounded-lg">
                 <TrendingUp className="w-6 h-6 text-light-base dark:text-dark-base" />
               </div>
-              <span className="text-xl font-bold text-lime-accent font-editorial">Finora</span>
+              <span className="text-xl font-bold text-lime-accent font-editorial">FinoraX</span>
             </div>
             
             <div className="flex items-center space-x-8">
               <span className="text-light-text-secondary dark:text-dark-text-secondary">
-                © 2024 Finora. All rights reserved.
+                © 2024 FinoraX. All rights reserved.
               </span>
               <div className="flex items-center space-x-4">
                 <a href="#" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
