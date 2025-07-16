@@ -1,6 +1,6 @@
-# 🌿 Finora — Modern Finance Tracker & Subscription-Based SaaS App
+# 🌿 X — Modern Finance Tracker & Subscription-Based SaaS App
 
-Finora is a full-stack subscription-based SaaS application that helps users track multiple currencies, visualize spending insights, and manage subscriptions securely — built with cutting-edge tools like React, Vite, Supabase, Paddle, and Tailwind CSS.
+X is a full-stack subscription-based SaaS application that helps users track multiple currencies, visualize spending insights, and manage subscriptions securely — built with cutting-edge tools like React, Vite, Supabase, Paddle, and Tailwind CSS.
 
 ---
 
