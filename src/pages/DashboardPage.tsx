@@ -8,6 +8,7 @@ import { ExchangeRates } from '../components/ExchangeRates';
 import { InsightsPage } from '../components/InsightsPage';
 import { SettingsPage } from '../components/SettingsPage';
 import { ProfilePage } from '../components/ProfilePage';
+import { TransfersPage } from '../components/TransfersPage';
 
 export const DashboardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('wallet');
@@ -24,18 +25,7 @@ export const DashboardPage: React.FC = () => {
       case 'exchange':
         return <ExchangeRates />;
       case 'transfers':
-        return (
-          <div className="flex items-center justify-center h-96">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center"
-            >
-              <h2 className="text-2xl font-bold text-light-text dark:text-dark-text font-editorial mb-4">International Transfers</h2>
-              <p className="text-light-text-secondary dark:text-dark-text-secondary">Coming soon - Send money globally with animated journey tracking</p>
-            </motion.div>
-          </div>
-        );
+        return <TransfersPage />;
       case 'insights':
         return <InsightsPage />;
       case 'settings':
@@ -58,11 +48,11 @@ export const DashboardPage: React.FC = () => {
       <div className="flex h-screen relative font-montserrat">
         {/* Sidebar */}
         <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-        
+
         {/* Main Content */}
         <div className="flex-1 font-montserrat flex flex-col min-w-0">
           <TopBar />
-          
+
           {/* Content Area */}
           <div className="flex-1 font-montserrat overflow-auto pb-20">
             <div className="p-8">
@@ -83,7 +73,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* CTA Strip */}
-  
+
     </div>
   );
 };

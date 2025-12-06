@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, PieChart, Lock, Crown } from 'lucide-react';
+import { BarChart3, TrendingUp, Lock, Crown, DollarSign, ShoppingBag, Plane, Coffee, Briefcase } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useNavigate } from 'react-router-dom';
+import { transactionService } from '../services';
 
 type Insight = {
   title: string;
@@ -14,21 +15,101 @@ type Insight = {
 export const InsightsPage: React.FC = () => {
   const { plan, isFeatureUnlocked } = useSubscription();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [basicInsights, setBasicInsights] = useState<Insight[]>([]);
+  const [monthlySummary, setMonthlySummary] = useState({ income: 0, expenses: 0 });
 
   const hasAdvancedAnalytics = isFeatureUnlocked?.('advanced-analytics') ?? false;
 
-  const basicInsights: Insight[] = [
-    { title: 'Monthly Spending', value: '$2,847.32', change: '+12%', color: 'text-blue-400' },
-    { title: 'Top Category', value: 'Food & Dining', change: '34%', color: 'text-lime-accent' },
-    { title: 'Avg. Transaction', value: '$89.45', change: '-5%', color: 'text-orange-400' },
-  ];
+  useEffect(() => {
+    const loadInsights = async () => {
+      setLoading(true);
+      try {
+        const [summary, transactions] = await Promise.all([
+          transactionService.getMonthlySummary(),
+          transactionService.getTransactions(100),
+        ]);
+
+        setMonthlySummary(summary);
+
+        // Calculate insights from real data
+        const avgTransaction = transactions.length > 0
+          ? transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / transactions.length
+          : 0;
+
+        // Find top category
+        const categoryCounts: Record<string, number> = {};
+        transactions.forEach(t => {
+          const cat = t.category || 'other';
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + Math.abs(t.amount);
+        });
+        const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
+
+        setBasicInsights([
+          {
+            title: 'Monthly Spending',
+            value: `$${summary.expenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            change: transactions.length > 0 ? 'This month' : 'No data',
+            color: 'text-blue-400'
+          },
+          {
+            title: 'Top Category',
+            value: topCategory ? topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1) : 'N/A',
+            change: topCategory ? `$${topCategory[1].toLocaleString()}` : '',
+            color: 'text-lime-accent'
+          },
+          {
+            title: 'Avg. Transaction',
+            value: `$${avgTransaction.toFixed(2)}`,
+            change: `${transactions.length} transactions`,
+            color: 'text-orange-400'
+          },
+        ]);
+      } catch (err) {
+        console.error('Error loading insights:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInsights();
+  }, []);
 
   const premiumInsights: Insight[] = [
-    { title: 'Spending Velocity', value: '1.2x', change: 'vs last month', color: 'text-purple-400' },
-    { title: 'Savings Rate', value: '23.4%', change: '+2.1%', color: 'text-lime-accent' },
-    { title: 'Investment ROI', value: '8.7%', change: 'YTD', color: 'text-blue-400' },
-    { title: 'Budget Efficiency', value: '87%', change: '+5%', color: 'text-green-400' },
+    {
+      title: 'Savings Rate',
+      value: monthlySummary.income > 0
+        ? `${((monthlySummary.income - monthlySummary.expenses) / monthlySummary.income * 100).toFixed(1)}%`
+        : 'N/A',
+      change: 'of income saved',
+      color: 'text-lime-accent'
+    },
+    {
+      title: 'Monthly Income',
+      value: `$${monthlySummary.income.toLocaleString()}`,
+      change: 'This month',
+      color: 'text-green-400'
+    },
+    {
+      title: 'Net Flow',
+      value: `$${(monthlySummary.income - monthlySummary.expenses).toLocaleString()}`,
+      change: monthlySummary.income > monthlySummary.expenses ? 'Positive' : 'Negative',
+      color: 'text-blue-400'
+    },
+    {
+      title: 'Budget Status',
+      value: monthlySummary.expenses < monthlySummary.income ? 'On Track' : 'Over Budget',
+      change: monthlySummary.expenses < monthlySummary.income ? '✓' : '⚠️',
+      color: monthlySummary.expenses < monthlySummary.income ? 'text-green-400' : 'text-red-400'
+    },
   ];
+
+  const categoryIcons: Record<string, React.ElementType> = {
+    business: Briefcase,
+    income: DollarSign,
+    shopping: ShoppingBag,
+    travel: Plane,
+    food: Coffee,
+  };
 
   const ChartCard = ({
     title,
@@ -55,6 +136,19 @@ export const InsightsPage: React.FC = () => {
       </div>
     </motion.div>
   );
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 bg-light-glass dark:bg-dark-glass rounded w-1/3"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-32 bg-light-glass dark:bg-dark-glass rounded-xl"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -125,7 +219,7 @@ export const InsightsPage: React.FC = () => {
           <Lock className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary mx-auto mb-4" />
           <h3 className="text-xl font-bold text-light-text dark:text-dark-text mb-2">Advanced Analytics Locked</h3>
           <p className="text-light-text-secondary dark:text-dark-text-secondary mb-6">
-            Upgrade to Premium to unlock AI-powered insights, spending predictions, and advanced analytics.
+            Upgrade to Premium to unlock savings rate, income tracking, and budget analysis.
           </p>
           <button
             onClick={() => navigate('/pricing')}
@@ -141,12 +235,12 @@ export const InsightsPage: React.FC = () => {
         <ChartCard
           title="Spending Trends"
           icon={<BarChart3 className="w-6 h-6 text-lime-accent" />}
-          description="Chart visualization"
+          description="Chart visualization coming soon"
         />
         <ChartCard
           title="Growth Analysis"
           icon={<TrendingUp className="w-6 h-6 text-lime-accent" />}
-          description="Trend analysis"
+          description="Trend analysis coming soon"
         />
       </div>
     </div>
