@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Bell,
@@ -9,13 +9,17 @@ import {
   Smartphone,
   Monitor,
   Crown,
-  Loader2
+  Loader2,
+  X,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { userService, UserSettings } from '../services';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../config/supabase';
 
 export const SettingsPage: React.FC = () => {
   const { plan, billingCycle } = useSubscription();
@@ -25,6 +29,20 @@ export const SettingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+
+  // Modals
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // Password form
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -34,10 +52,35 @@ export const SettingsPage: React.FC = () => {
           userService.getSettings(),
           userService.getProfile(),
         ]);
-        setSettings(settingsData);
+
+        if (!settingsData) {
+          const defaultSettings = await userService.upsertSettings({
+            notifications_email: true,
+            notifications_push: true,
+            notifications_sms: false,
+            two_factor_enabled: false,
+            theme: 'system',
+          });
+          setSettings(defaultSettings);
+        } else {
+          setSettings(settingsData);
+        }
+
         setDisplayName(profileData?.display_name || user?.email?.split('@')[0] || '');
+        setDefaultCurrency(profileData?.default_currency || 'USD');
       } catch (err) {
         console.error('Error loading settings:', err);
+        setSettings({
+          id: '',
+          user_id: '',
+          notifications_email: true,
+          notifications_push: true,
+          notifications_sms: false,
+          two_factor_enabled: false,
+          theme: 'system',
+          created_at: '',
+          updated_at: '',
+        });
       } finally {
         setLoading(false);
       }
@@ -47,15 +90,18 @@ export const SettingsPage: React.FC = () => {
 
   const handleNotificationToggle = async (key: 'notifications_email' | 'notifications_push' | 'notifications_sms') => {
     if (!settings) return;
-    setSaving(true);
+
+    const newSettings = { ...settings, [key]: !settings[key] };
+    setSettings(newSettings);
+
     try {
-      const newValue = !settings[key];
-      await userService.upsertSettings({ [key]: newValue });
-      setSettings({ ...settings, [key]: newValue });
+      await userService.upsertSettings({ [key]: newSettings[key] });
+      const label = key.replace('notifications_', '');
+      showToast(`${label.charAt(0).toUpperCase() + label.slice(1)} notifications ${newSettings[key] ? 'enabled' : 'disabled'}`);
     } catch (err) {
       console.error('Error updating setting:', err);
-    } finally {
-      setSaving(false);
+      setSettings(settings);
+      showToast('Failed to update setting');
     }
   };
 
@@ -63,20 +109,76 @@ export const SettingsPage: React.FC = () => {
     setSaving(true);
     try {
       await userService.upsertProfile({ display_name: displayName });
-      alert('Display name updated!');
+      showToast('Display name updated!');
     } catch (err) {
       console.error('Error saving display name:', err);
-      alert('Failed to save');
+      showToast('Failed to save');
     } finally {
       setSaving(false);
     }
   };
 
-  const notifications = settings ? {
-    email: settings.notifications_email,
-    push: settings.notifications_push,
-    sms: settings.notifications_sms,
-  } : { email: true, push: true, sms: false };
+  const handleCurrencyChange = async (currency: string) => {
+    setDefaultCurrency(currency);
+    try {
+      await userService.upsertProfile({ default_currency: currency });
+      showToast(`Default currency set to ${currency}`);
+    } catch (err) {
+      console.error('Error saving currency:', err);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword,
+      });
+
+      if (error) throw error;
+
+      setShowPasswordModal(false);
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+      showToast('Password updated successfully!');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handle2FAToggle = async () => {
+    if (!settings) return;
+
+    const newValue = !settings.two_factor_enabled;
+
+    try {
+      await userService.upsertSettings({ two_factor_enabled: newValue });
+      setSettings({ ...settings, two_factor_enabled: newValue });
+      setShow2FAModal(false);
+      showToast(`Two-factor authentication ${newValue ? 'enabled' : 'disabled'}`);
+    } catch (err) {
+      console.error('Error updating 2FA:', err);
+      showToast('Failed to update 2FA setting');
+    }
+  };
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
 
   if (loading) {
     return (
@@ -100,25 +202,36 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-20 right-8 z-50 bg-lime-accent text-dark-base px-4 py-3 rounded-xl flex items-center space-x-2 shadow-glow"
+          >
+            <Check className="w-5 h-5" />
+            <span className="font-medium">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h2 className="text-3xl font-bold text-light-text dark:text-dark-text font-editorial">Settings</h2>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <h2 className="text-3xl font-bold text-light-text dark:text-dark-text">Settings</h2>
         <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">Manage your account and preferences</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Account Settings */}
+        {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ delay: 0.1 }}
           className="lg:col-span-2 space-y-6"
         >
-          {/* Profile Section */}
+          {/* Profile */}
           <div className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6">
             <div className="flex items-center space-x-3 mb-6">
               <User className="w-6 h-6 text-lime-accent" />
@@ -144,12 +257,12 @@ export const SettingsPage: React.FC = () => {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Enter your display name"
-                    className="flex-1 px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 transition-colors"
+                    className="flex-1 px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
                   />
                   <button
                     onClick={handleDisplayNameSave}
                     disabled={saving}
-                    className="px-4 py-3 bg-lime-accent text-light-base dark:text-dark-base rounded-xl font-medium hover:shadow-glow transition-all disabled:opacity-50"
+                    className="px-4 py-3 bg-lime-accent text-dark-base rounded-xl font-medium hover:shadow-glow disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save'}
                   </button>
@@ -166,22 +279,47 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {Object.entries(notifications).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between">
-                  <span className="text-light-text dark:text-dark-text capitalize">{key} notifications</span>
-                  <button
-                    onClick={() => handleNotificationToggle(`notifications_${key}` as any)}
-                    disabled={saving}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-lime-accent' : 'bg-light-glass dark:bg-dark-glass'
-                      }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                    />
-                  </button>
+              {/* Email Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-light-text dark:text-dark-text font-medium">Email notifications</span>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Receive updates via email</p>
                 </div>
-              ))}
+                <button
+                  onClick={() => handleNotificationToggle('notifications_email')}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${settings?.notifications_email ? 'bg-lime-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
+                >
+                  <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings?.notifications_email ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              {/* Push Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-light-text dark:text-dark-text font-medium">Push notifications</span>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Browser push notifications</p>
+                </div>
+                <button
+                  onClick={() => handleNotificationToggle('notifications_push')}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${settings?.notifications_push ? 'bg-lime-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
+                >
+                  <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings?.notifications_push ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              {/* SMS Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-light-text dark:text-dark-text font-medium">SMS notifications</span>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Text message alerts</p>
+                </div>
+                <button
+                  onClick={() => handleNotificationToggle('notifications_sms')}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${settings?.notifications_sms ? 'bg-lime-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
+                >
+                  <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings?.notifications_sms ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -193,15 +331,22 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              <button className="w-full text-left p-4 bg-light-glass dark:bg-dark-glass rounded-xl hover:bg-lime-accent/10 transition-colors">
+              <button onClick={() => setShowPasswordModal(true)} className="w-full text-left p-4 bg-light-glass dark:bg-dark-glass rounded-xl hover:bg-lime-accent/10 transition-colors">
                 <div className="font-medium text-light-text dark:text-dark-text">Change Password</div>
                 <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Update your account password</div>
               </button>
 
-              <button className="w-full text-left p-4 bg-light-glass dark:bg-dark-glass rounded-xl hover:bg-lime-accent/10 transition-colors">
-                <div className="font-medium text-light-text dark:text-dark-text">Two-Factor Authentication</div>
-                <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                  {settings?.two_factor_enabled ? 'Enabled ✓' : 'Add an extra layer of security'}
+              <button onClick={() => setShow2FAModal(true)} className="w-full text-left p-4 bg-light-glass dark:bg-dark-glass rounded-xl hover:bg-lime-accent/10 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-light-text dark:text-dark-text">Two-Factor Authentication</div>
+                    <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                      {settings?.two_factor_enabled ? 'Currently enabled' : 'Add extra security'}
+                    </div>
+                  </div>
+                  {settings?.two_factor_enabled && (
+                    <span className="px-2 py-1 bg-lime-accent/20 text-lime-accent text-xs rounded-full font-medium">Enabled</span>
+                  )}
                 </div>
               </button>
             </div>
@@ -216,77 +361,196 @@ export const SettingsPage: React.FC = () => {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-light-text dark:text-dark-text">Theme</span>
-                {/* Sidebar */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="space-y-6"
+                <div>
+                  <span className="text-light-text dark:text-dark-text font-medium">Theme</span>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Toggle dark/light mode</p>
+                </div>
+                <ThemeToggle />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-light-text dark:text-dark-text font-medium">Default Currency</span>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Your preferred currency</p>
+                </div>
+                <select
+                  value={defaultCurrency}
+                  onChange={(e) => handleCurrencyChange(e.target.value)}
+                  className="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg px-3 py-2 text-gray-900 dark:text-white cursor-pointer"
+                  style={{ colorScheme: 'light dark' }}
                 >
-                  {/* Subscription Status */}
-                  <div className="bg-gradient-to-br from-lime-accent/10 to-lime-accent/5 border border-lime-accent/20 rounded-xl p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <Crown className="w-6 h-6 text-lime-accent" />
-                      <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Subscription</h3>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Current Plan</span>
-                        <p className="font-bold text-lime-accent capitalize">{plan || 'Free Trial'}</p>
-                      </div>
-
-                      <div>
-                        <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Billing</span>
-                        <p className="font-medium text-light-text dark:text-dark-text capitalize">{billingCycle || 'N/A'}</p>
-                      </div>
-
-                      <button
-                        onClick={() => navigate('/pricing')}
-                        className="w-full bg-lime-accent text-light-base dark:text-dark-base py-2 rounded-lg font-medium hover:shadow-glow transition-all"
-                      >
-                        {plan ? 'Manage Subscription' : 'Upgrade Plan'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Download Apps */}
-                  <div className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <Download className="w-6 h-6 text-lime-accent" />
-                      <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Download Apps</h3>
-                    </div>
-
-                    <div className="space-y-3">
-                      <button className="w-full flex items-center space-x-3 p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10 transition-colors">
-                        <Smartphone className="w-5 h-5 text-light-text dark:text-dark-text" />
-                        <span className="text-light-text dark:text-dark-text">Mobile App</span>
-                      </button>
-
-                      <button className="w-full flex items-center space-x-3 p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10 transition-colors">
-                        <Monitor className="w-5 h-5 text-light-text dark:text-dark-text" />
-                        <span className="text-light-text dark:text-dark-text">Desktop App</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Support */}
-                  <div className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-light-text dark:text-dark-text mb-4">Support</h3>
-
-                    <div className="space-y-3">
-                      <button className="w-full text-left p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10 transition-colors">
-                        <div className="font-medium text-light-text dark:text-dark-text">Help Center</div>
-                      </button>
-
-                      <button className="w-full text-left p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10 transition-colors">
-                        <div className="font-medium text-light-text dark:text-dark-text">Contact Support</div>
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
+                  <option>USD</option>
+                  <option>EUR</option>
+                  <option>GBP</option>
+                  <option>INR</option>
+                  <option>JPY</option>
+                </select>
               </div>
             </div>
-            );
+          </div>
+        </motion.div>
+
+        {/* Sidebar */}
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
+          {/* Subscription */}
+          <div className="bg-gradient-to-br from-lime-accent/10 to-lime-accent/5 border border-lime-accent/20 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Crown className="w-6 h-6 text-lime-accent" />
+              <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Subscription</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Current Plan</span>
+                <p className="font-bold text-lime-accent capitalize">{plan || 'Free Trial'}</p>
+              </div>
+              <div>
+                <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Billing</span>
+                <p className="font-medium text-light-text dark:text-dark-text capitalize">{billingCycle || 'N/A'}</p>
+              </div>
+              <button onClick={() => navigate('/pricing')} className="w-full bg-lime-accent text-dark-base py-2 rounded-lg font-medium hover:shadow-glow">
+                {plan ? 'Manage Subscription' : 'Upgrade Plan'}
+              </button>
+            </div>
+          </div>
+
+          {/* Download Apps */}
+          <div className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Download className="w-6 h-6 text-lime-accent" />
+              <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Download Apps</h3>
+            </div>
+            <div className="space-y-3">
+              <button onClick={() => showToast('Mobile app coming soon!')} className="w-full flex items-center space-x-3 p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10">
+                <Smartphone className="w-5 h-5 text-light-text dark:text-dark-text" />
+                <span className="text-light-text dark:text-dark-text">Mobile App</span>
+              </button>
+              <button onClick={() => showToast('Desktop app coming soon!')} className="w-full flex items-center space-x-3 p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10">
+                <Monitor className="w-5 h-5 text-light-text dark:text-dark-text" />
+                <span className="text-light-text dark:text-dark-text">Desktop App</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Support */}
+          <div className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6">
+            <h3 className="text-lg font-bold text-light-text dark:text-dark-text mb-4">Support</h3>
+            <div className="space-y-3">
+              <button onClick={() => showToast('Opening Help Center...')} className="w-full text-left p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10">
+                <div className="font-medium text-light-text dark:text-dark-text">Help Center</div>
+              </button>
+              <button onClick={() => showToast('Opening email client...')} className="w-full text-left p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10">
+                <div className="font-medium text-light-text dark:text-dark-text">Contact Support</div>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Password Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPasswordModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-light-text dark:text-dark-text">Change Password</h3>
+                <button onClick={() => setShowPasswordModal(false)} className="text-light-text-secondary hover:text-light-text">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {passwordError && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <span className="text-red-400 text-sm">{passwordError}</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text"
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+                <div className="flex space-x-3 pt-2">
+                  <button onClick={() => setShowPasswordModal(false)} className="flex-1 px-4 py-3 bg-light-glass dark:bg-dark-glass text-light-text dark:text-dark-text rounded-xl font-medium">Cancel</button>
+                  <button onClick={handlePasswordChange} disabled={passwordLoading} className="flex-1 px-4 py-3 bg-lime-accent text-dark-base rounded-xl font-medium disabled:opacity-50">
+                    {passwordLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Update Password'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 2FA Modal */}
+      <AnimatePresence>
+        {show2FAModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShow2FAModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-light-text dark:text-dark-text">Two-Factor Authentication</h3>
+                <button onClick={() => setShow2FAModal(false)} className="text-light-text-secondary hover:text-light-text">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="text-center py-4">
+                <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${settings?.two_factor_enabled ? 'bg-lime-accent/20' : 'bg-light-glass dark:bg-dark-glass'}`}>
+                  <Shield className={`w-8 h-8 ${settings?.two_factor_enabled ? 'text-lime-accent' : 'text-light-text-secondary'}`} />
+                </div>
+                <p className="text-light-text dark:text-dark-text mb-2">
+                  {settings?.two_factor_enabled ? '2FA is currently enabled' : 'Add an extra layer of security'}
+                </p>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-6">
+                  {settings?.two_factor_enabled ? 'Disabling will make your account less secure' : 'Verify your identity when logging in'}
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button onClick={() => setShow2FAModal(false)} className="flex-1 px-4 py-3 bg-light-glass dark:bg-dark-glass text-light-text dark:text-dark-text rounded-xl font-medium">Cancel</button>
+                <button
+                  onClick={handle2FAToggle}
+                  className={`flex-1 px-4 py-3 rounded-xl font-medium ${settings?.two_factor_enabled ? 'bg-red-500 text-white' : 'bg-lime-accent text-dark-base'}`}
+                >
+                  {settings?.two_factor_enabled ? 'Disable 2FA' : 'Enable 2FA'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
