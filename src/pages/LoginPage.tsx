@@ -44,7 +44,7 @@ export const LoginPage: React.FC = () => {
         result = await loginWithMeta();
       }
 
-     
+
 
       // Supabase handles the redirect
     } catch (err: any) {

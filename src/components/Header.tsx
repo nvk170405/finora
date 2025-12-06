@@ -8,9 +8,6 @@ import { useAuth } from '../contexts/AuthContext';
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const { user } = useAuth();
- 
-
- 
 
   return (
     <motion.header
@@ -19,8 +16,8 @@ export const Header: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="fixed top-0 left-0 right-0 bg-light-surface/80 dark:bg-dark-surface/80 backdrop-blur-glass border-b border-light-border dark:border-dark-border z-50 transition-colors duration-300"
     >
-      <div className="fixed top-8 left-0 right-0 z-10 mx-auto max-w-3xl px-6 py-1 bg-light-base dark:bg-dark-surface dark:shadow-lime-700 dark:shadow-2xl ring-2 ring-gray-300 dark:ring-gray-700 rounded-full shadow-xl backdrop-blur-lg ">
-        <div className="flex items-center justify-between h-16 ">
+      <div className="fixed top-8 left-0 right-0 z-10 mx-auto max-w-3xl px-6 py-1 bg-light-base dark:bg-dark-surface dark:shadow-lime-700 dark:shadow-2xl ring-2 ring-gray-300 dark:ring-gray-700 rounded-full shadow-xl backdrop-blur-lg">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="p-2 bg-lime-accent rounded-lg">
@@ -30,7 +27,7 @@ export const Header: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="flex justify-between items-center gap-10 ">
+          <nav className="hidden md:flex justify-between items-center gap-6">
             <Link to="/" className="font-semibold text-gray-500 dark:text-gray-300 hover:text-lime-accent transition-colors">
               Home
             </Link>
@@ -48,14 +45,12 @@ export const Header: React.FC = () => {
                 >
                   Dashboard
                 </Link>
-                
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                
                 <Link
                   to="/signup"
-                  className="bg-lime-accent text-light-base dark:text-dark-base px-4 py-2 rounded-lg font-medium hover:shadow-glow transition-all"
+                  className="bg-lime-accent text-light-base dark:text-dark-base px-6 py-2.5 rounded-lg font-medium hover:shadow-glow transition-all"
                 >
                   Get Started
                 </Link>
@@ -116,7 +111,6 @@ export const Header: React.FC = () => {
                   >
                     Dashboard
                   </Link>
-                  
                 </>
               ) : (
                 <>
