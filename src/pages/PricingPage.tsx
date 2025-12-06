@@ -18,21 +18,29 @@ const plans = {
 export const Pricing: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { updateSubscription } = useSubscription();
   const navigate = useNavigate();
 
   const handleSubscribe = async (plan: 'basic' | 'premium') => {
     setLoading(plan);
+    setError(null);
     try {
-      // Simulate billing for now
-      setTimeout(() => {
-        updateSubscription(plan, billingCycle);
-        navigate('/dashboard');
-        setLoading(null);
-      }, 1500);
-    } catch (error) {
-      console.error('Subscription error:', error);
+      // Update subscription in database (also updates local state)
+      await updateSubscription(plan, billingCycle);
+
+      console.log('Subscription updated, navigating to dashboard...');
+
+      // Small delay to ensure state update propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Use React Router navigate (no page reload, state is already updated)
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Subscription error:', err);
+      setError(err.message || 'Failed to subscribe. Please try again.');
       setLoading(null);
+      alert('Subscription error: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -66,21 +74,19 @@ export const Pricing: React.FC = () => {
           <div className="bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-full p-1">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-full font-medium transition-all ${
-                billingCycle === 'monthly'
-                  ? 'bg-lime-accent text-light-base dark:text-dark-base shadow-glow'
-                  : 'text-light-text dark:text-dark-text hover:text-lime-accent'
-              }`}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${billingCycle === 'monthly'
+                ? 'bg-lime-accent text-light-base dark:text-dark-base shadow-glow'
+                : 'text-light-text dark:text-dark-text hover:text-lime-accent'
+                }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
-              className={`px-6 py-2 rounded-full font-medium transition-all relative ${
-                billingCycle === 'yearly'
-                  ? 'bg-lime-accent text-light-base dark:text-dark-base shadow-glow'
-                  : 'text-light-text dark:text-dark-text hover:text-lime-accent'
-              }`}
+              className={`px-6 py-2 rounded-full font-medium transition-all relative ${billingCycle === 'yearly'
+                ? 'bg-lime-accent text-light-base dark:text-dark-base shadow-glow'
+                : 'text-light-text dark:text-dark-text hover:text-lime-accent'
+                }`}
             >
               Yearly
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">

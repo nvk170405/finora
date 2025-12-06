@@ -54,26 +54,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/verify`,
+        emailRedirectTo: `${window.location.origin}/pricing`,
       },
     });
 
-    const newUser = data?.user;
-
-    if (newUser) {
-      const { error: userInsertError } = await supabase.from('users').insert([
-        {
-          id: newUser.id, // Same as auth.users ID
-          full_name: name,
-          email: newUser.email,
-        },
-      ]);
-
-      if (userInsertError) {
-        console.error('Error inserting user into users table:', userInsertError.message);
-        return { error: userInsertError };
-      }
-    }
+    // User data is automatically stored in auth.users by Supabase
+    // No need to manually insert into a separate users table
 
     return { error };
   };
@@ -90,28 +76,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const loginWithGoogle = async () => {
+    // Use current origin for redirect (localhost in dev, production in prod)
+    const redirectUrl = window.location.origin.includes('localhost')
+      ? 'http://localhost:5173/auth/callback'
+      : `${window.location.origin}/auth/callback`;
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/pricing`,
+        redirectTo: redirectUrl,
       },
     });
   };
 
   const loginWithApple = async () => {
+    // Use current origin for redirect (localhost in dev, production in prod)
+    const redirectUrl = window.location.origin.includes('localhost')
+      ? 'http://localhost:5173/auth/callback'
+      : `${window.location.origin}/auth/callback`;
+
     await supabase.auth.signInWithOAuth({
       provider: 'apple',
       options: {
-        redirectTo: `${window.location.origin}/pricing`,
+        redirectTo: redirectUrl,
       },
     });
   };
 
   const loginWithMeta = async () => {
+    // Use current origin for redirect (localhost in dev, production in prod)
+    const redirectUrl = window.location.origin.includes('localhost')
+      ? 'http://localhost:5173/auth/callback'
+      : `${window.location.origin}/auth/callback`;
+
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: `${window.location.origin}/pricing`,
+        redirectTo: redirectUrl,
       },
     });
   };

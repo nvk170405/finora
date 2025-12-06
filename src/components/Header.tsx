@@ -31,10 +31,10 @@ export const Header: React.FC = () => {
             <Link to="/" className="font-semibold text-gray-500 dark:text-gray-300 hover:text-lime-accent transition-colors">
               Home
             </Link>
-            <Link to="/#features" className="font-semibold text-gray-500 dark:text-gray-300 hover:text-lime-accent transition-colors">
+            <Link to="/features" className="font-semibold text-gray-500 dark:text-gray-300 hover:text-lime-accent transition-colors">
               Features
             </Link>
-            <Link to="/#pricing" className="font-semibold text-gray-500 dark:text-gray-300 hover:text-lime-accent transition-colors">
+            <Link to="/pricing" className="font-semibold text-gray-500 dark:text-gray-300 hover:text-lime-accent transition-colors">
               Pricing
             </Link>
             {user ? (
@@ -89,14 +89,14 @@ export const Header: React.FC = () => {
                 Home
               </Link>
               <Link
-                to="/#features"
+                to="/features"
                 className="text-light-text dark:text-dark-text hover:text-lime-accent transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Features
               </Link>
               <Link
-                to="/#pricing"
+                to="/pricing"
                 className="text-light-text dark:text-dark-text hover:text-lime-accent transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >

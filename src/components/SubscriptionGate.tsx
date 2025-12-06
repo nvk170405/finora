@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
@@ -8,15 +8,9 @@ interface SubscriptionGateProps {
 
 export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) => {
   const { hasActiveSubscription, loading } = useSubscription();
-  const [checked, setChecked] = useState(false);
 
-  useEffect(() => {
-    if (!loading) {
-      setChecked(true);
-    }
-  }, [loading]);
-
-  if (!checked) {
+  // Show loading while checking subscription
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
         Checking subscription...
@@ -24,9 +18,11 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
     );
   }
 
+  // If no active subscription, redirect to pricing
   if (!hasActiveSubscription) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/pricing" replace />;
   }
 
+  // User has active subscription, render children
   return <>{children}</>;
 };

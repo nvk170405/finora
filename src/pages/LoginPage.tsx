@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TrendingUp, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { BsGoogle, BsApple, BsMeta } from 'react-icons/bs';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +13,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
 
   const { login, loginWithGoogle, loginWithApple, loginWithMeta } = useAuth();
-  const navigate = useNavigate();
+  const { refreshSubscription } = useSubscription();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,10 +23,31 @@ export const LoginPage: React.FC = () => {
     try {
       const { error } = await login(email, password);
       if (error) throw error;
-      navigate('/pricing');
+
+      // Wait a bit for auth state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Refresh subscription data
+      await refreshSubscription();
+
+      // Check subscription status from localStorage or make a quick check
+      const { data: userData } = await (await import('../config/supabase')).supabase.auth.getUser();
+      if (userData.user) {
+        const { data: subData } = await (await import('../config/supabase')).supabase
+          .from('subscriptions')
+          .select('plan')
+          .eq('user_id', userData.user.id)
+          .single();
+
+        // Redirect based on subscription status
+        if (subData && subData.plan) {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/pricing';
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to login');
-    } finally {
       setLoading(false);
     }
   };

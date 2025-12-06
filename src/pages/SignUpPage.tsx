@@ -1,12 +1,11 @@
 import React, { useState, FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TrendingUp, Mail, Lock, User  } from 'lucide-react';
+import { TrendingUp, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { BsGoogle, BsApple, BsMeta } from "react-icons/bs";
 export const SignUpPage: React.FC = () => {
   const { signup, loginWithGoogle, loginWithApple, loginWithMeta } = useAuth();
-  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +22,8 @@ export const SignUpPage: React.FC = () => {
       const { error } = await signup(email, password, name);
       if (error) throw error;
       alert('Verification email sent. Please check your inbox.');
-      navigate('/verify-email');
+      // Use hard redirect to avoid hash navigation issues
+      window.location.href = '/pricing';
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
@@ -132,7 +132,7 @@ export const SignUpPage: React.FC = () => {
                   className="w-full pl-10 pr-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 transition-colors"
                   placeholder="Enter your password"
                 />
-                
+
               </div>
             </div>
 

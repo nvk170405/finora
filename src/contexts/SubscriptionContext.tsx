@@ -52,7 +52,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) {
       console.error('User not authenticated');
-      return;
+      throw new Error('User not authenticated');
     }
 
     const { error } = await supabase
@@ -65,10 +65,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     if (error) {
       console.error('Error updating subscription:', error.message);
-    } else {
-      setPlan(plan);
-      setBillingCycle(billingCycle);
+      throw new Error(error.message);
     }
+
+    // Update local state immediately
+    setPlan(plan);
+    setBillingCycle(billingCycle);
+    console.log('Subscription updated successfully:', plan, billingCycle);
   };
 
   useEffect(() => {
@@ -76,17 +79,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   const isFeatureUnlocked = (feature: string): boolean => {
-  if (plan === 'premium') return true;
+    if (plan === 'premium') return true;
 
-  const basicFeatures = [
-    'basic-analytics',
-    'dashboard',
-    'voice-recording',
-    'themes'
-  ];
+    const basicFeatures = [
+      'basic-analytics',
+      'dashboard',
+      'voice-recording',
+      'themes'
+    ];
 
-  return basicFeatures.includes(feature);
-};
+    return basicFeatures.includes(feature);
+  };
 
   return (
     <SubscriptionContext.Provider
