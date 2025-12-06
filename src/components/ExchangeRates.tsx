@@ -1,57 +1,32 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
-
-// Displays live currency exchange rates with bank comparisons and a quick exchange calculator
-const exchangeRates = [
-  { 
-    pair: 'EUR/USD', 
-    rate: 1.0892, 
-    change: +0.0023, 
-    changePercent: +0.21,
-    high: 1.0895,
-    low: 1.0871,
-    bankRate: 1.0850,
-    spread: 0.0042
-  },
-  { 
-    pair: 'GBP/USD', 
-    rate: 1.2634, 
-    change: -0.0018, 
-    changePercent: -0.14,
-    high: 1.2651,
-    low: 1.2618,
-    bankRate: 1.2590,
-    spread: 0.0044
-  },
-  { 
-    pair: 'USD/JPY', 
-    rate: 149.82, 
-    change: +0.45, 
-    changePercent: +0.30,
-    high: 149.95,
-    low: 149.21,
-    bankRate: 149.20,
-    spread: 0.62
-  },
-  { 
-    pair: 'EUR/GBP', 
-    rate: 0.8621, 
-    change: +0.0008, 
-    changePercent: +0.09,
-    high: 0.8628,
-    low: 0.8615,
-    bankRate: 0.8605,
-    spread: 0.0016
-  },
-];
+import { useExchangeRates } from '../hooks';
 
 export const ExchangeRates: React.FC = () => {
-  const [lastUpdate, setLastUpdate] = React.useState(new Date());
+  const { rates, loading, lastUpdate, refetch } = useExchangeRates();
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  const handleRefresh = () => {
-    setLastUpdate(new Date());
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-light-glass dark:bg-dark-glass rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-48 bg-light-glass dark:bg-dark-glass rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -70,15 +45,16 @@ export const ExchangeRates: React.FC = () => {
           whileHover={{ scale: 1.05, rotate: 180 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleRefresh}
-          className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 transition-colors duration-300"
+          disabled={refreshing}
+          className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 transition-colors duration-300 disabled:opacity-50"
         >
-          <RefreshCw className="w-5 h-5 text-light-text dark:text-dark-text" />
+          <RefreshCw className={`w-5 h-5 text-light-text dark:text-dark-text ${refreshing ? 'animate-spin' : ''}`} />
         </motion.button>
       </motion.div>
 
       {/* Rates Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {exchangeRates.map((rate, index) => (
+        {rates.map((rate, index) => (
           <motion.div
             key={rate.pair}
             initial={{ opacity: 0, y: 30 }}
@@ -91,15 +67,17 @@ export const ExchangeRates: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-montserrat font-bold text-light-text dark:text-dark-text font-editorial">{rate.pair}</h3>
-                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Last update: {lastUpdate.toLocaleTimeString()}</p>
+                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                  Last update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'N/A'}
+                </p>
               </div>
-              <div className={`flex items-center space-x-1 ${rate.change >= 0 ? 'text-lime-accent' : 'text-red-400'}`}>
-                {rate.change >= 0 ? (
+              <div className={`flex items-center space-x-1 ${rate.changePercent >= 0 ? 'text-lime-accent' : 'text-red-400'}`}>
+                {rate.changePercent >= 0 ? (
                   <TrendingUp className="w-5 h-5" />
                 ) : (
                   <TrendingDown className="w-5 h-5" />
                 )}
-                <span className="font-medium font-montserrat">{rate.changePercent > 0 ? '+' : ''}{rate.changePercent}%</span>
+                <span className="font-medium font-montserrat">{rate.changePercent > 0 ? '+' : ''}{rate.changePercent.toFixed(2)}%</span>
               </div>
             </div>
 
@@ -132,20 +110,18 @@ export const ExchangeRates: React.FC = () => {
               </div>
 
               {/* Bank Comparison */}
-              <div className="pt-3 border-t border-dark-border">
-                <div className="pt-3 border-t border-light-border dark:border-dark-border">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-light-text-secondary dark:text-dark-text-secondary">Bank Rate:</span>
-                    <span className="text-light-text dark:text-dark-text">{rate.bankRate.toFixed(4)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-light-text-secondary dark:text-dark-text-secondary">Our Advantage:</span>
-                    <span className="text-lime-accent font-medium">+{rate.spread.toFixed(4)}</span>
-                  </div>
+              <div className="pt-3 border-t border-light-border dark:border-dark-border">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Bank Rate:</span>
+                  <span className="text-light-text dark:text-dark-text">{rate.bankRate.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Our Advantage:</span>
+                  <span className="text-lime-accent font-medium">+{rate.spread.toFixed(4)}</span>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="w-full bg-light-glass dark:bg-dark-glass rounded-full h-1">
+                <div className="w-full bg-light-glass dark:bg-dark-glass rounded-full h-1 mt-2">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min((rate.rate - rate.low) / (rate.high - rate.low) * 100, 100)}%` }}
