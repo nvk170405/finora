@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Crown
+  Crown,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -22,6 +23,7 @@ interface SidebarProps {
 
 const navigation = [
   { id: 'wallet', label: 'Wallet', icon: Wallet },
+  { id: 'deposit', label: 'Deposit', icon: Plus },
   { id: 'exchange', label: 'Exchange', icon: TrendingUp },
   { id: 'transfers', label: 'Transfers', icon: Send },
   { id: 'insights', label: 'Insights', icon: BarChart3 },
@@ -55,14 +57,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
         >
           {!isCollapsed && (
             <div>
-               <Link to="/" className="flex items-center space-x-2">
-                          <div className="p-1 bg-lime-accent rounded-lg">
-                            <TrendingUp className="w-6 h-6 font-montserrat text-light-base dark:text-dark-base" />
-                          </div>
-                          <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">FinoraX</span>
-                        </Link>
-              
-              
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="p-1 bg-lime-accent rounded-lg">
+                  <TrendingUp className="w-6 h-6 font-montserrat text-light-base dark:text-dark-base" />
+                </div>
+                <span className="text-xl font-montserrat font-bold text-lime-accent font-editorial">FinoraX</span>
+              </Link>
+
+
             </div>
           )}
         </motion.div>
@@ -88,11 +90,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
             <motion.button
               key={item.id}
               onClick={() => onSectionChange(item.id)}
-              className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all relative group ${
-                isActive
+              className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all relative group ${isActive
                   ? 'bg-lime-accent/10 text-lime-accent'
                   : 'text-light-text font-montserrat dark:text-dark-text hover:bg-light-glass dark:hover:bg-dark-glass hover:text-lime-accent'
-              }`}
+                }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >

@@ -9,6 +9,7 @@ import { InsightsPage } from '../components/InsightsPage';
 import { SettingsPage } from '../components/SettingsPage';
 import { ProfilePage } from '../components/ProfilePage';
 import { TransfersPage } from '../components/TransfersPage';
+import { DepositPage } from '../components/DepositPage';
 
 export const DashboardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('wallet');
@@ -24,6 +25,8 @@ export const DashboardPage: React.FC = () => {
         );
       case 'exchange':
         return <ExchangeRates />;
+      case 'deposit':
+        return <DepositPage />;
       case 'transfers':
         return <TransfersPage />;
       case 'insights':
