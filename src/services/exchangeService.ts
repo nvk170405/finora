@@ -23,8 +23,29 @@ export interface ExchangeRatePair {
     spread: number;
 }
 
+export interface LiveRateResponse {
+    result: string;
+    base_code: string;
+    rates: Record<string, number>;
+    time_last_update_utc: string;
+}
+
 // Free exchange rate API (exchangerate-api.com - 1500 free requests/month)
+// No API key needed for the free tier
 const EXCHANGE_RATE_API_URL = 'https://api.exchangerate-api.com/v4/latest';
+
+// Supported currencies for the app
+const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD'];
+
+// Popular currency pairs to display
+const DISPLAY_PAIRS = [
+    { pair: 'EUR/USD', base: 'EUR', target: 'USD' },
+    { pair: 'GBP/USD', base: 'GBP', target: 'USD' },
+    { pair: 'USD/JPY', base: 'USD', target: 'JPY' },
+    { pair: 'USD/INR', base: 'USD', target: 'INR' },
+    { pair: 'EUR/GBP', base: 'EUR', target: 'GBP' },
+    { pair: 'EUR/INR', base: 'EUR', target: 'INR' },
+];
 
 export const exchangeService = {
     /**
@@ -62,73 +83,131 @@ export const exchangeService = {
         if (fromCurrency === toCurrency) return amount;
 
         const rate = await this.getRate(fromCurrency, toCurrency);
-        if (!rate) {
-            // Try reverse rate
-            const reverseRate = await this.getRate(toCurrency, fromCurrency);
-            if (reverseRate) {
-                return amount / reverseRate;
-            }
-            throw new Error(`Exchange rate not found for ${fromCurrency}/${toCurrency}`);
+        if (rate) {
+            return amount * rate;
         }
 
-        return amount * rate;
+        // Try reverse rate
+        const reverseRate = await this.getRate(toCurrency, fromCurrency);
+        if (reverseRate) {
+            return amount / reverseRate;
+        }
+
+        // Try to compute through USD
+        const fromToUsd = await this.getRate(fromCurrency, 'USD');
+        const usdToTarget = await this.getRate('USD', toCurrency);
+        if (fromToUsd && usdToTarget) {
+            return amount * fromToUsd * usdToTarget;
+        }
+
+        throw new Error(`Exchange rate not found for ${fromCurrency}/${toCurrency}`);
     },
 
     /**
-     * Fetch live rates from external API and update cache
+     * Fetch live rates from exchangerate-api.com and update database
      */
-    async fetchLiveRates(baseCurrency = 'USD'): Promise<void> {
+    async fetchLiveRates(): Promise<{ success: boolean; updated: number; error?: string }> {
         try {
-            const response = await fetch(`${EXCHANGE_RATE_API_URL}/${baseCurrency}`);
-            const data = await response.json();
+            console.log('Fetching live exchange rates...');
 
-            if (!data.rates) {
-                throw new Error('Invalid response from exchange rate API');
-            }
+            // Fetch rates for multiple base currencies
+            const baseCurrencies = ['USD', 'EUR', 'GBP'];
+            const updates: Array<{ base_currency: string; target_currency: string; rate: number }> = [];
 
-            const currencies = ['EUR', 'GBP', 'JPY', 'USD'];
-            const updates: Partial<ExchangeRate>[] = [];
+            for (const base of baseCurrencies) {
+                const response = await fetch(`${EXCHANGE_RATE_API_URL}/${base}`);
 
-            for (const target of currencies) {
-                if (target === baseCurrency) continue;
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
 
-                const rate = data.rates[target];
-                if (rate) {
-                    updates.push({
-                        base_currency: baseCurrency,
-                        target_currency: target,
-                        rate: rate,
-                        updated_at: new Date().toISOString(),
-                    });
+                const data: LiveRateResponse = await response.json();
+
+                if (!data.rates) {
+                    throw new Error('Invalid response from exchange rate API');
+                }
+
+                // Get rates for all supported currencies
+                for (const target of SUPPORTED_CURRENCIES) {
+                    if (target === base) continue;
+
+                    const rate = data.rates[target];
+                    if (rate) {
+                        // Calculate simulated 24h stats (for demo purposes)
+                        const variance = 0.005; // 0.5% variance
+                        const change = (Math.random() - 0.5) * 2 * variance * rate;
+                        const changePercent = (change / rate) * 100;
+
+                        updates.push({
+                            base_currency: base,
+                            target_currency: target,
+                            rate: rate,
+                        });
+                    }
                 }
             }
 
-            // Upsert rates
+            // Batch upsert all rates
             for (const update of updates) {
+                // Get existing rate for comparison
+                const { data: existing } = await supabase
+                    .from('exchange_rates')
+                    .select('rate')
+                    .eq('base_currency', update.base_currency)
+                    .eq('target_currency', update.target_currency)
+                    .single();
+
+                const previousRate = existing?.rate || update.rate;
+                const change = update.rate - previousRate;
+                const changePercent = previousRate > 0 ? (change / previousRate) * 100 : 0;
+
                 await supabase
                     .from('exchange_rates')
-                    .upsert(update, { onConflict: 'base_currency,target_currency' });
+                    .upsert({
+                        base_currency: update.base_currency,
+                        target_currency: update.target_currency,
+                        rate: update.rate,
+                        change_24h: change,
+                        change_percent_24h: changePercent,
+                        high_24h: Math.max(update.rate, previousRate),
+                        low_24h: Math.min(update.rate, previousRate),
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: 'base_currency,target_currency' });
             }
 
-            console.log(`Updated ${updates.length} exchange rates`);
-        } catch (error) {
-            console.error('Failed to fetch live rates:', error);
-            throw error;
+            console.log(`✅ Updated ${updates.length} exchange rates`);
+            return { success: true, updated: updates.length };
+
+        } catch (error: any) {
+            console.error('❌ Failed to fetch live rates:', error);
+            return { success: false, updated: 0, error: error.message };
         }
+    },
+
+    /**
+     * Check if rates need refresh (older than 1 hour)
+     */
+    async needsRefresh(): Promise<boolean> {
+        const lastUpdate = await this.getLastUpdateTime();
+        if (!lastUpdate) return true;
+
+        const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        return lastUpdate < hourAgo;
     },
 
     /**
      * Get formatted exchange rate pairs for display
      */
     async getDisplayRates(): Promise<ExchangeRatePair[]> {
+        // Check if we need to refresh rates
+        const needsRefresh = await this.needsRefresh();
+        if (needsRefresh) {
+            await this.fetchLiveRates();
+        }
+
         const rates = await this.getCachedRates();
 
-        const pairs: ExchangeRatePair[] = [
-            { pair: 'EUR/USD', base: 'EUR', target: 'USD' },
-            { pair: 'GBP/USD', base: 'GBP', target: 'USD' },
-            { pair: 'USD/JPY', base: 'USD', target: 'JPY' },
-            { pair: 'EUR/GBP', base: 'EUR', target: 'GBP' },
-        ].map((p) => {
+        const pairs: ExchangeRatePair[] = DISPLAY_PAIRS.map((p) => {
             const rateData = rates.find(
                 (r) => r.base_currency === p.base && r.target_currency === p.target
             );
@@ -139,8 +218,9 @@ export const exchangeService = {
             const high = rateData?.high_24h || rate;
             const low = rateData?.low_24h || rate;
 
-            // Simulate bank rate (typically worse by 0.3-0.5%)
-            const bankRate = rate * 0.995;
+            // Bank rate (typically 2-3% worse than mid-market rate)
+            const bankSpread = 0.025; // 2.5%
+            const bankRate = rate * (1 - bankSpread);
             const spread = rate - bankRate;
 
             return {
@@ -159,6 +239,25 @@ export const exchangeService = {
     },
 
     /**
+     * Get all available currency rates for a base currency
+     */
+    async getRatesForCurrency(baseCurrency: string): Promise<Record<string, number>> {
+        const { data, error } = await supabase
+            .from('exchange_rates')
+            .select('target_currency, rate')
+            .eq('base_currency', baseCurrency.toUpperCase());
+
+        if (error) throw new Error(error.message);
+
+        const rates: Record<string, number> = {};
+        (data || []).forEach((r) => {
+            rates[r.target_currency] = r.rate;
+        });
+
+        return rates;
+    },
+
+    /**
      * Get last update time
      */
     async getLastUpdateTime(): Promise<Date | null> {
@@ -171,5 +270,12 @@ export const exchangeService = {
 
         if (error) return null;
         return data ? new Date(data.updated_at) : null;
+    },
+
+    /**
+     * Get supported currencies
+     */
+    getSupportedCurrencies(): string[] {
+        return SUPPORTED_CURRENCIES;
     },
 };

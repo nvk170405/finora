@@ -1,16 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw, Zap } from 'lucide-react';
 import { useExchangeRates } from '../hooks';
 
 export const ExchangeRates: React.FC = () => {
-  const { rates, loading, lastUpdate, refetch } = useExchangeRates();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const { rates, loading, lastUpdate, forceRefresh, refreshing } = useExchangeRates();
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
+    const result = await forceRefresh();
+    if (result.success) {
+      console.log(`Updated ${result.updated} rates from live API`);
+    }
   };
 
   if (loading) {
@@ -39,17 +39,27 @@ export const ExchangeRates: React.FC = () => {
       >
         <div>
           <h2 className="text-3xl font-bold font-montserrat text-light-text dark:text-dark-text font-editorial">Live Exchange Rates</h2>
-          <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">Real-time rates vs major banks</p>
+          <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">
+            Real-time rates from exchangerate-api.com
+          </p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05, rotate: 180 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 transition-colors duration-300 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-5 h-5 text-light-text dark:text-dark-text ${refreshing ? 'animate-spin' : ''}`} />
-        </motion.button>
+        <div className="flex items-center space-x-3">
+          {refreshing && (
+            <span className="text-sm text-lime-accent flex items-center space-x-1">
+              <Zap className="w-4 h-4" />
+              <span>Fetching live rates...</span>
+            </span>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.05, rotate: 180 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 transition-colors duration-300 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-5 h-5 text-light-text dark:text-dark-text ${refreshing ? 'animate-spin' : ''}`} />
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Rates Grid */}
@@ -124,7 +134,7 @@ export const ExchangeRates: React.FC = () => {
                 <div className="w-full bg-light-glass dark:bg-dark-glass rounded-full h-1 mt-2">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((rate.rate - rate.low) / (rate.high - rate.low) * 100, 100)}%` }}
+                    animate={{ width: `${Math.min((rate.rate - rate.low) / (rate.high - rate.low) * 100, 100) || 50}%` }}
                     transition={{ duration: 1, delay: index * 0.1 + 0.4 }}
                     className="h-1 bg-lime-accent rounded-full opacity-70"
                   />
@@ -151,6 +161,7 @@ export const ExchangeRates: React.FC = () => {
                 <option>USD</option>
                 <option>EUR</option>
                 <option>GBP</option>
+                <option>INR</option>
                 <option>JPY</option>
               </select>
               <input
@@ -164,6 +175,7 @@ export const ExchangeRates: React.FC = () => {
             <label className="block text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">To</label>
             <div className="flex">
               <select className="bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-l-xl px-3 py-2 text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 transition-colors duration-300">
+                <option>INR</option>
                 <option>EUR</option>
                 <option>USD</option>
                 <option>GBP</option>
@@ -171,7 +183,7 @@ export const ExchangeRates: React.FC = () => {
               </select>
               <input
                 type="number"
-                placeholder="892.30"
+                placeholder="83,500.00"
                 className="bg-light-glass dark:bg-dark-glass border border-l-0 border-light-border dark:border-dark-border rounded-r-xl px-3 py-2 text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 flex-1 transition-colors duration-300"
                 readOnly
               />
