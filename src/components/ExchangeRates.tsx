@@ -1,15 +1,103 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, RefreshCw, Zap } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw, Zap, ArrowRightLeft } from 'lucide-react';
 import { useExchangeRates } from '../hooks';
 
+const currencies = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF'];
+const currencySymbols: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  INR: '₹',
+  JPY: '¥',
+  CAD: 'C$',
+  AUD: 'A$',
+  CHF: 'Fr',
+};
+
 export const ExchangeRates: React.FC = () => {
-  const { rates, loading, lastUpdate, forceRefresh, refreshing } = useExchangeRates();
+  const { rates, loading, lastUpdate, forceRefresh, refreshing, convert } = useExchangeRates();
+
+  const [fromCurrency, setFromCurrency] = useState('USD');
+  const [toCurrency, setToCurrency] = useState('INR');
+  const [fromAmount, setFromAmount] = useState('1000');
+  const [toAmount, setToAmount] = useState('');
+  const [converting, setConverting] = useState(false);
+
+  const doConvert = useCallback(async () => {
+    if (!fromAmount || parseFloat(fromAmount) <= 0) {
+      setToAmount('');
+      return;
+    }
+    setConverting(true);
+    try {
+      const result = await convert(parseFloat(fromAmount), fromCurrency, toCurrency);
+      setToAmount(result.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    } catch {
+      setToAmount('N/A');
+    } finally {
+      setConverting(false);
+    }
+  }, [fromAmount, fromCurrency, toCurrency, convert]);
+
+  const handleAmountChange = (value: string) => {
+    setFromAmount(value);
+    setToAmount('...');
+    const timer = setTimeout(async () => {
+      if (!value || parseFloat(value) <= 0) {
+        setToAmount('');
+        return;
+      }
+      setConverting(true);
+      try {
+        const result = await convert(parseFloat(value), fromCurrency, toCurrency);
+        setToAmount(result.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      } catch {
+        setToAmount('N/A');
+      } finally {
+        setConverting(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  };
+
+  const handleCurrencyChange = async (type: 'from' | 'to', value: string) => {
+    if (type === 'from') setFromCurrency(value);
+    else setToCurrency(value);
+
+    const from = type === 'from' ? value : fromCurrency;
+    const to = type === 'to' ? value : toCurrency;
+    if (!fromAmount || parseFloat(fromAmount) <= 0) return;
+
+    setConverting(true);
+    try {
+      const result = await convert(parseFloat(fromAmount), from, to);
+      setToAmount(result.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    } catch {
+      setToAmount('N/A');
+    } finally {
+      setConverting(false);
+    }
+  };
 
   const handleRefresh = async () => {
     const result = await forceRefresh();
-    if (result.success) {
-      console.log(`Updated ${result.updated} rates from live API`);
+    if (result.success) doConvert();
+  };
+
+  const swapCurrencies = async () => {
+    const tempFrom = fromCurrency;
+    setFromCurrency(toCurrency);
+    setToCurrency(tempFrom);
+    if (!fromAmount || parseFloat(fromAmount) <= 0) return;
+    setConverting(true);
+    try {
+      const result = await convert(parseFloat(fromAmount), toCurrency, tempFrom);
+      setToAmount(result.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    } catch {
+      setToAmount('N/A');
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -34,11 +122,10 @@ export const ExchangeRates: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
         className="flex items-center justify-between"
       >
         <div>
-          <h2 className="text-3xl font-bold font-montserrat text-light-text dark:text-dark-text font-editorial">Live Exchange Rates</h2>
+          <h2 className="text-3xl font-bold text-light-text dark:text-dark-text">Live Exchange Rates</h2>
           <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">
             Real-time rates from exchangerate-api.com
           </p>
@@ -47,7 +134,7 @@ export const ExchangeRates: React.FC = () => {
           {refreshing && (
             <span className="text-sm text-lime-accent flex items-center space-x-1">
               <Zap className="w-4 h-4" />
-              <span>Fetching live rates...</span>
+              <span>Fetching...</span>
             </span>
           )}
           <motion.button
@@ -55,7 +142,7 @@ export const ExchangeRates: React.FC = () => {
             whileTap={{ scale: 0.95 }}
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 transition-colors duration-300 disabled:opacity-50"
+            className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 disabled:opacity-50"
           >
             <RefreshCw className={`w-5 h-5 text-light-text dark:text-dark-text ${refreshing ? 'animate-spin' : ''}`} />
           </motion.button>
@@ -69,75 +156,41 @@ export const ExchangeRates: React.FC = () => {
             key={rate.pair}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
+            transition={{ delay: index * 0.1 }}
             whileHover={{ scale: 1.02 }}
-            className="bg-light-surface/50 font-montserrat dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6 hover:border-lime-accent/30 transition-all hover:shadow-glow duration-300"
+            className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6 hover:border-lime-accent/30 hover:shadow-glow"
           >
-            {/* Pair Header */}
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-montserrat font-bold text-light-text dark:text-dark-text font-editorial">{rate.pair}</h3>
+                <h3 className="text-xl font-bold text-light-text dark:text-dark-text">{rate.pair}</h3>
                 <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                  Last update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'N/A'}
+                  {lastUpdate ? lastUpdate.toLocaleTimeString() : 'N/A'}
                 </p>
               </div>
               <div className={`flex items-center space-x-1 ${rate.changePercent >= 0 ? 'text-lime-accent' : 'text-red-400'}`}>
-                {rate.changePercent >= 0 ? (
-                  <TrendingUp className="w-5 h-5" />
-                ) : (
-                  <TrendingDown className="w-5 h-5" />
-                )}
-                <span className="font-medium font-montserrat">{rate.changePercent > 0 ? '+' : ''}{rate.changePercent.toFixed(2)}%</span>
+                {rate.changePercent >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                <span className="font-medium">{rate.changePercent > 0 ? '+' : ''}{rate.changePercent.toFixed(2)}%</span>
               </div>
             </div>
-
-            {/* Rate Display */}
             <div className="space-y-3">
               <div className="flex items-baseline space-x-2">
-                <motion.span
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                  className="text-3xl font-montserrat font-bold text-lime-accent font-editorial"
-                >
-                  {rate.rate.toFixed(4)}
-                </motion.span>
+                <span className="text-3xl font-bold text-lime-accent">{rate.rate.toFixed(4)}</span>
                 <span className={`text-sm ${rate.change >= 0 ? 'text-lime-accent' : 'text-red-400'}`}>
                   {rate.change > 0 ? '+' : ''}{rate.change.toFixed(4)}
                 </span>
               </div>
-
-              {/* High/Low */}
               <div className="flex justify-between text-sm">
-                <div>
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary">High: </span>
-                  <span className="text-light-text dark:text-dark-text font-medium">{rate.high.toFixed(4)}</span>
-                </div>
-                <div>
-                  <span className="text-light-text-secondary dark:text-dark-text-secondary">Low: </span>
-                  <span className="text-light-text dark:text-dark-text font-medium">{rate.low.toFixed(4)}</span>
-                </div>
+                <span className="text-light-text-secondary dark:text-dark-text-secondary">High: <span className="text-light-text dark:text-dark-text">{rate.high.toFixed(4)}</span></span>
+                <span className="text-light-text-secondary dark:text-dark-text-secondary">Low: <span className="text-light-text dark:text-dark-text">{rate.low.toFixed(4)}</span></span>
               </div>
-
-              {/* Bank Comparison */}
               <div className="pt-3 border-t border-light-border dark:border-dark-border">
-                <div className="flex justify-between text-sm mb-2">
+                <div className="flex justify-between text-sm">
                   <span className="text-light-text-secondary dark:text-dark-text-secondary">Bank Rate:</span>
                   <span className="text-light-text dark:text-dark-text">{rate.bankRate.toFixed(4)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm mt-1">
                   <span className="text-light-text-secondary dark:text-dark-text-secondary">Our Advantage:</span>
                   <span className="text-lime-accent font-medium">+{rate.spread.toFixed(4)}</span>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-light-glass dark:bg-dark-glass rounded-full h-1 mt-2">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((rate.rate - rate.low) / (rate.high - rate.low) * 100, 100) || 50}%` }}
-                    transition={{ duration: 1, delay: index * 0.1 + 0.4 }}
-                    className="h-1 bg-lime-accent rounded-full opacity-70"
-                  />
                 </div>
               </div>
             </div>
@@ -149,51 +202,72 @@ export const ExchangeRates: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        className="bg-gradient-to-r from-light-surface/80 to-light-glass dark:from-dark-surface/80 dark:to-dark-glass border border-light-border dark:border-dark-border rounded-2xl p-6 shadow-glass transition-colors duration-300"
+        transition={{ delay: 0.4 }}
+        className="bg-gradient-to-r from-light-surface/80 to-light-glass dark:from-dark-surface/80 dark:to-dark-glass border border-light-border dark:border-dark-border rounded-2xl p-6"
       >
-        <h3 className="text-xl font-bold text-light-text dark:text-dark-text font-editorial mb-4">Quick Exchange</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div>
+        <h3 className="text-xl font-bold text-light-text dark:text-dark-text mb-4">Quick Exchange</h3>
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
+          {/* From */}
+          <div className="md:col-span-3">
             <label className="block text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">From</label>
             <div className="flex">
-              <select className="bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-l-xl px-3 py-2 text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 transition-colors duration-300">
-                <option>USD</option>
-                <option>EUR</option>
-                <option>GBP</option>
-                <option>INR</option>
-                <option>JPY</option>
+              <select
+                value={fromCurrency}
+                onChange={(e) => handleCurrencyChange('from', e.target.value)}
+                className="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-l-xl px-3 py-3 text-gray-900 dark:text-white focus:outline-none cursor-pointer"
+                style={{ colorScheme: 'light dark' }}
+              >
+                {currencies.map(c => (
+                  <option key={c} value={c} className="bg-white dark:bg-dark-surface text-gray-900 dark:text-white">{c}</option>
+                ))}
               </select>
               <input
                 type="number"
-                placeholder="1000"
-                className="bg-light-glass dark:bg-dark-glass border border-l-0 border-light-border dark:border-dark-border rounded-r-xl px-3 py-2 text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 flex-1 transition-colors duration-300"
+                value={fromAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                className="bg-light-glass dark:bg-dark-glass border border-l-0 border-light-border dark:border-dark-border rounded-r-xl px-3 py-3 text-light-text dark:text-dark-text flex-1"
               />
             </div>
+            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">{currencySymbols[fromCurrency]} {fromCurrency}</p>
           </div>
-          <div>
+
+          {/* Swap */}
+          <div className="flex justify-center md:col-span-1">
+            <motion.button whileHover={{ scale: 1.1, rotate: 180 }} onClick={swapCurrencies} className="p-3 bg-lime-accent/20 rounded-full hover:bg-lime-accent/30">
+              <ArrowRightLeft className="w-5 h-5 text-lime-accent" />
+            </motion.button>
+          </div>
+
+          {/* To */}
+          <div className="md:col-span-3">
             <label className="block text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">To</label>
             <div className="flex">
-              <select className="bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-l-xl px-3 py-2 text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 transition-colors duration-300">
-                <option>INR</option>
-                <option>EUR</option>
-                <option>USD</option>
-                <option>GBP</option>
-                <option>JPY</option>
+              <select
+                value={toCurrency}
+                onChange={(e) => handleCurrencyChange('to', e.target.value)}
+                className="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-l-xl px-3 py-3 text-gray-900 dark:text-white focus:outline-none cursor-pointer"
+                style={{ colorScheme: 'light dark' }}
+              >
+                {currencies.map(c => (
+                  <option key={c} value={c} className="bg-white dark:bg-dark-surface text-gray-900 dark:text-white">{c}</option>
+                ))}
               </select>
               <input
-                type="number"
-                placeholder="83,500.00"
-                className="bg-light-glass dark:bg-dark-glass border border-l-0 border-light-border dark:border-dark-border rounded-r-xl px-3 py-2 text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 flex-1 transition-colors duration-300"
+                type="text"
+                value={converting ? 'Converting...' : toAmount}
                 readOnly
+                className="bg-light-glass dark:bg-dark-glass border border-l-0 border-light-border dark:border-dark-border rounded-r-xl px-3 py-3 text-lime-accent font-bold flex-1"
               />
             </div>
+            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">{currencySymbols[toCurrency]} {toCurrency}</p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-lime-accent text-light-base dark:text-dark-base px-6 py-3 rounded-xl font-medium hover:shadow-glow transition-all"
-          >
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-light-text-secondary dark:text-dark-text-secondary">
+            1 {fromCurrency} ≈ {toAmount && fromAmount && !converting ? (parseFloat(toAmount.replace(/,/g, '')) / parseFloat(fromAmount)).toFixed(4) : '...'} {toCurrency}
+          </span>
+          <motion.button whileHover={{ scale: 1.05 }} className="bg-lime-accent text-dark-base px-6 py-2 rounded-xl font-medium hover:shadow-glow">
             Exchange Now
           </motion.button>
         </div>

@@ -54,7 +54,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 font-montserrat flex flex-col min-w-0">
-          <TopBar />
+          <TopBar onNavigate={setActiveSection} />
 
           {/* Content Area */}
           <div className="flex-1 font-montserrat overflow-auto pb-20">

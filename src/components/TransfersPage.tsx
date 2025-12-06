@@ -170,11 +170,12 @@ export const TransfersPage: React.FC = () => {
                             <select
                                 value={formData.fromWallet}
                                 onChange={(e) => setFormData({ ...formData, fromWallet: e.target.value })}
-                                className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
+                                className="w-full px-4 py-3 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-lime-accent/50 appearance-none cursor-pointer"
+                                style={{ colorScheme: 'light dark' }}
                             >
-                                <option value="">Select a wallet</option>
+                                <option value="" className="bg-white dark:bg-dark-surface text-gray-900 dark:text-white">Select a wallet</option>
                                 {wallets.map((wallet) => (
-                                    <option key={wallet.id} value={wallet.id}>
+                                    <option key={wallet.id} value={wallet.id} className="bg-white dark:bg-dark-surface text-gray-900 dark:text-white">
                                         {currencyFlags[wallet.currency] || '💰'} {wallet.currency} - ${wallet.balance.toLocaleString()}
                                     </option>
                                 ))}
