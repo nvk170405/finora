@@ -436,16 +436,18 @@ export const FeaturesPage: React.FC = () => {
             {/* Footer */}
             <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-black text-white">
                 <div className="max-w-7xl mx-auto text-center">
-                    <div className="text-6xl font-bold tracking-tight text-lime-accent mb-8 font-montserrat">
+                    <Link to="/" className="text-6xl font-bold tracking-tight text-lime-accent mb-8 font-montserrat block">
                         finoraX
-                    </div>
+                    </Link>
                     <p className="text-gray-400 mb-8">
                         The future of personal finance is here.
                     </p>
-                    <div className="flex items-center justify-center space-x-8 text-gray-500">
-                        <a href="#" className="hover:text-lime-accent transition-colors">Privacy</a>
-                        <a href="#" className="hover:text-lime-accent transition-colors">Terms</a>
-                        <a href="#" className="hover:text-lime-accent transition-colors">Contact</a>
+                    <div className="flex flex-wrap items-center justify-center gap-6 text-gray-500 mb-4">
+                        <Link to="/privacy" className="hover:text-lime-accent transition-colors">Privacy</Link>
+                        <Link to="/terms" className="hover:text-lime-accent transition-colors">Terms</Link>
+                        <Link to="/cancellation-refund" className="hover:text-lime-accent transition-colors">Refunds</Link>
+                        <Link to="/shipping" className="hover:text-lime-accent transition-colors">Shipping</Link>
+                        <Link to="/contact" className="hover:text-lime-accent transition-colors">Contact</Link>
                     </div>
                     <div className="mt-8 text-gray-600 text-sm">
                         © 2024 FinoraX. All rights reserved.

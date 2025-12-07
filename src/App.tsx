@@ -9,6 +9,11 @@ import { SignUpPage } from './pages/SignUpPage';
 import { Pricing } from './pages/PricingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FeaturesPage } from './pages/FeaturesPage';
+import { CancellationRefundPage } from './pages/CancellationRefundPage';
+import { TermsConditionsPage } from './pages/TermsConditionsPage';
+import { ShippingDeliveryPage } from './pages/ShippingDeliveryPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { ContactUsPage } from './pages/ContactUsPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { SubscriptionGate } from './components/SubscriptionGate';
@@ -24,6 +29,11 @@ function App() {
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/features" element={<FeaturesPage />} />
+                  <Route path="/cancellation-refund" element={<CancellationRefundPage />} />
+                  <Route path="/terms" element={<TermsConditionsPage />} />
+                  <Route path="/shipping" element={<ShippingDeliveryPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/contact" element={<ContactUsPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignUpPage />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />

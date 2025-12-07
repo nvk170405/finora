@@ -379,27 +379,35 @@ export const HomePage: React.FC = () => {
         {/* Footer */}
         <footer className="border-t border-lime-accent/20 dark:border-dark-border py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between">
-              <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center space-x-2">
                 <div className="p-2 bg-lime-accent rounded-lg">
                   <TrendingUp className="w-6 h-6 text-gray-900" />
                 </div>
                 <span className="text-xl font-bold text-lime-accent font-editorial">FinoraX</span>
               </div>
 
-              <div className="flex items-center space-x-8">
-                <span className="text-light-text-secondary dark:text-dark-text-secondary">
-                  © 2024 FinoraX. All rights reserved.
-                </span>
-                <div className="flex items-center space-x-4">
-                  <a href="#" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
-                    Privacy
-                  </a>
-                  <a href="#" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
-                    Terms
-                  </a>
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+                <Link to="/privacy" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
+                  Privacy
+                </Link>
+                <Link to="/terms" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
+                  Terms
+                </Link>
+                <Link to="/cancellation-refund" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
+                  Refunds
+                </Link>
+                <Link to="/shipping" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
+                  Shipping
+                </Link>
+                <Link to="/contact" className="text-light-text-secondary dark:text-dark-text-secondary hover:text-lime-accent transition-colors">
+                  Contact
+                </Link>
               </div>
+
+              <span className="text-light-text-secondary dark:text-dark-text-secondary text-sm">
+                © 2024 FinoraX. All rights reserved.
+              </span>
             </div>
           </div>
         </footer>
