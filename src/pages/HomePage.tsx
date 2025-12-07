@@ -11,11 +11,11 @@ import {
   Star,
   ArrowRight,
   Check,
-  Download,
-  Smartphone
+  Smartphone,
+  Info
 } from 'lucide-react';
 import { Header } from '../components/Header';
-import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
+import { BackgroundCircles } from '../components/ui/background-circles';
 
 const features = [
   {
@@ -81,74 +81,55 @@ export const HomePage: React.FC = () => {
         <Header />
 
         {/* Hero Section */}
-        <section className="min-h-[90vh] overflow-hidden pt-52 pb-16 px-4 sm:px-6 lg:px-8 font-montserrat">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center">
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="text-4xl md:text-6xl z-50 font-extrabold text-light-text dark:text-dark-text font-montserrat mb-6"
-              >
-                Smart Financial Management
-                <span className="block text-lime-accent">Made Simple</span>
-              </motion.h1>
+        <section className="min-h-screen overflow-hidden px-4 sm:px-6 lg:px-8 font-montserrat relative">
+          {/* Background Circles Animation */}
+          <BackgroundCircles variant="lime" />
 
-              <motion.p
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-xl text-light-text-secondary dark:text-dark-text-secondary mb-8 max-w-3xl mx-auto"
-              >
-                Take control of your global finances with FinoraX's intelligent platform.
-                Multi-currency support, real-time analytics, and seamless international transfers.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
-              >
-                <Link
-                  to="/signup"
-                  className="bg-lime-accent z-20 text-gray-900 px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-glow transition-all flex items-center space-x-2"
+          {/* Centered Hero Content */}
+          <div className="min-h-screen flex items-center justify-center relative z-10">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center">
+                <motion.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="text-4xl md:text-6xl z-50 font-extrabold text-light-text dark:text-dark-text font-montserrat mb-6"
                 >
-                  <span>Start Free Trial</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
+                  Smart Financial Management
+                  <span className="block text-lime-accent">Made Simple</span>
+                </motion.h1>
 
-                <button className="flex z-20 items-center space-x-2 text-light-text dark:text-dark-text hover:text-lime-accent transition-colors">
-                  <Download className="w-5 h-5" />
-                  <span>Download App</span>
-                </button>
-              </motion.div>
-            </div>
+                <motion.p
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="text-xl text-light-text-secondary dark:text-dark-text-secondary mb-8 max-w-3xl mx-auto"
+                >
+                  Take control of your global finances with FinoraX's intelligent platform.
+                  Multi-currency support, real-time analytics, and seamless international transfers.
+                </motion.p>
 
-            {/* Hero Image/Dashboard Preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.6 }}
-              className="mt-16 relative"
-            >
-              <div className="bg-gradient-to-br from-light-surface to-light-glass dark:from-dark-surface dark:to-dark-glass border border-light-border dark:border-dark-border rounded-2xl p-8 shadow-glass">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-lime-accent/10 rounded-xl p-6">
-                    <h3 className="text-2xl font-bold text-lime-accent mb-2">$28,203.91</h3>
-                    <p className="text-light-text-secondary dark:text-dark-text-secondary">Total Portfolio</p>
-                  </div>
-                  <div className="bg-light-glass dark:bg-dark-glass rounded-xl p-6">
-                    <h3 className="text-2xl font-bold text-light-text dark:text-dark-text mb-2">+4.2%</h3>
-                    <p className="text-light-text-secondary dark:text-dark-text-secondary">Monthly Growth</p>
-                  </div>
-                  <div className="bg-light-glass dark:bg-dark-glass rounded-xl p-6">
-                    <h3 className="text-2xl font-bold text-light-text dark:text-dark-text mb-2">12</h3>
-                    <p className="text-light-text-secondary dark:text-dark-text-secondary">Active Currencies</p>
-                  </div>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
+                  className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
+                >
+                  <Link
+                    to="/signup"
+                    className="bg-lime-accent z-20 text-gray-900 px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-glow transition-all flex items-center space-x-2"
+                  >
+                    <span>Start Free Trial</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+
+                  <button className="flex z-20 items-center space-x-2 text-light-text dark:text-dark-text hover:text-lime-accent transition-colors">
+                    <Info className="w-5 h-5" />
+                    <span>Learn More</span>
+                  </button>
+                </motion.div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 

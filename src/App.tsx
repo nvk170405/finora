@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { Pricing } from './pages/PricingPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { FeaturesPage } from './pages/FeaturesPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { SubscriptionGate } from './components/SubscriptionGate';
@@ -22,6 +23,7 @@ function App() {
               <div className="font-montserrat min-h-screen bg-light-base dark:bg-dark-base text-light-text dark:text-dark-text font-editorial transition-colors duration-300">
                 <Routes>
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/features" element={<FeaturesPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignUpPage />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
