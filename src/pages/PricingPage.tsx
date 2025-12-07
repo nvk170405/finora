@@ -1,47 +1,28 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Crown, Zap } from 'lucide-react';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import { useNavigate } from 'react-router-dom';
+import { useRazorpay } from '../hooks/useRazorpay';
 
+// Pricing displayed in USD (processed in INR via Razorpay)
 const plans = {
   monthly: {
-    basic: { price: 9.99 },
-    premium: { price: 24.99 }
+    basic: { price: 799, display: '$9.99' },
+    premium: { price: 1999, display: '$24.99' }
   },
   yearly: {
-    basic: { price: 149, monthlyEquivalent: 12.42 },
-    premium: { price: 349, monthlyEquivalent: 29.08 }
+    basic: { price: 7990, display: '$99', monthlyEquivalent: '$8.25/mo' },
+    premium: { price: 19990, display: '$249', monthlyEquivalent: '$20.75/mo' }
   }
 } as const;
 
 export const Pricing: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { updateSubscription } = useSubscription();
-  const navigate = useNavigate();
+  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium' | null>(null);
+  const { initiatePayment, loading, error } = useRazorpay();
 
   const handleSubscribe = async (plan: 'basic' | 'premium') => {
-    setLoading(plan);
-    setError(null);
-    try {
-      // Update subscription in database (also updates local state)
-      await updateSubscription(plan, billingCycle);
-
-      console.log('Subscription updated, navigating to dashboard...');
-
-      // Small delay to ensure state update propagates
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Use React Router navigate (no page reload, state is already updated)
-      navigate('/dashboard');
-    } catch (err: any) {
-      console.error('Subscription error:', err);
-      setError(err.message || 'Failed to subscribe. Please try again.');
-      setLoading(null);
-      alert('Subscription error: ' + (err.message || 'Unknown error'));
-    }
+    setSelectedPlan(plan);
+    await initiatePayment(plan, billingCycle);
   };
 
   const currentBasic = plans[billingCycle].basic;
@@ -118,14 +99,14 @@ export const Pricing: React.FC = () => {
 
             <div className="mb-6">
               <span className="text-4xl font-bold text-lime-accent">
-                ${currentBasic.price}
+                {currentBasic.display}
               </span>
               <span className="text-light-text-secondary dark:text-dark-text-secondary">
                 /{billingCycle === 'monthly' ? 'month' : 'year'}
               </span>
               {billingCycle === 'yearly' && 'monthlyEquivalent' in currentBasic && (
                 <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                  ${(currentBasic as { monthlyEquivalent: number }).monthlyEquivalent}/month billed annually
+                  {(currentBasic as any).monthlyEquivalent} billed annually
                 </div>
               )}
             </div>
@@ -139,10 +120,10 @@ export const Pricing: React.FC = () => {
 
             <button
               onClick={() => handleSubscribe('basic')}
-              disabled={loading === 'basic'}
+              disabled={loading && selectedPlan === 'basic'}
               className="w-full bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border text-light-text dark:text-dark-text py-3 rounded-xl font-medium hover:border-lime-accent/30 transition-all disabled:opacity-50"
             >
-              {loading === 'basic' ? 'Processing...' : 'Choose Basic'}
+              {loading && selectedPlan === 'basic' ? 'Processing...' : 'Choose Basic'}
             </button>
           </motion.div>
 
@@ -172,14 +153,14 @@ export const Pricing: React.FC = () => {
 
             <div className="mb-6">
               <span className="text-4xl font-bold text-lime-accent">
-                ${currentPremium.price}
+                {currentPremium.display}
               </span>
               <span className="text-light-text-secondary dark:text-dark-text-secondary">
                 /{billingCycle === 'monthly' ? 'month' : 'year'}
               </span>
               {billingCycle === 'yearly' && 'monthlyEquivalent' in currentPremium && (
                 <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                  ${(currentPremium as { monthlyEquivalent: number }).monthlyEquivalent}/month billed annually
+                  {(currentPremium as any).monthlyEquivalent} billed annually
                 </div>
               )}
             </div>
@@ -195,10 +176,10 @@ export const Pricing: React.FC = () => {
 
             <button
               onClick={() => handleSubscribe('premium')}
-              disabled={loading === 'premium'}
+              disabled={loading && selectedPlan === 'premium'}
               className="w-full bg-lime-accent text-light-base dark:text-dark-base py-3 rounded-xl font-medium hover:shadow-glow transition-all disabled:opacity-50"
             >
-              {loading === 'premium' ? 'Processing...' : 'Choose Premium'}
+              {loading && selectedPlan === 'premium' ? 'Processing...' : 'Choose Premium'}
             </button>
           </motion.div>
         </div>

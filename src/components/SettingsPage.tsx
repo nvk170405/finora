@@ -399,17 +399,52 @@ export const SettingsPage: React.FC = () => {
               <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Subscription</h3>
             </div>
             <div className="space-y-3">
-              <div>
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Current Plan</span>
-                <p className="font-bold text-lime-accent capitalize">{plan || 'Free Trial'}</p>
+                <span className="font-bold text-lime-accent capitalize">{plan || 'Free Trial'}</span>
               </div>
-              <div>
-                <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Billing</span>
-                <p className="font-medium text-light-text dark:text-dark-text capitalize">{billingCycle || 'N/A'}</p>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Billing Cycle</span>
+                <span className="font-medium text-light-text dark:text-dark-text capitalize">{billingCycle || 'N/A'}</span>
               </div>
-              <button onClick={() => navigate('/pricing')} className="w-full bg-lime-accent text-dark-base py-2 rounded-lg font-medium hover:shadow-glow">
-                {plan ? 'Manage Subscription' : 'Upgrade Plan'}
-              </button>
+              {plan && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Status</span>
+                  <span className="flex items-center space-x-1 text-green-500">
+                    <Check className="w-4 h-4" />
+                    <span className="text-sm font-medium">Active</span>
+                  </span>
+                </div>
+              )}
+              <div className="pt-2 space-y-2">
+                {plan === 'basic' && (
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="w-full bg-lime-accent text-dark-base py-2 rounded-lg font-medium hover:shadow-glow"
+                  >
+                    Upgrade to Premium
+                  </button>
+                )}
+                {plan === 'premium' && (
+                  <div className="text-center py-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                    You're on the best plan! 🎉
+                  </div>
+                )}
+                {!plan && (
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="w-full bg-lime-accent text-dark-base py-2 rounded-lg font-medium hover:shadow-glow"
+                  >
+                    Choose a Plan
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="w-full border border-light-border dark:border-dark-border text-light-text dark:text-dark-text py-2 rounded-lg font-medium hover:border-lime-accent/50 transition-colors"
+                >
+                  View All Plans
+                </button>
+              </div>
             </div>
           </div>
 
