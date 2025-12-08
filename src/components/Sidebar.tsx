@@ -11,7 +11,10 @@ import {
   User,
   Crown,
   Plus,
-  Building2
+  Building2,
+  Target,
+  CreditCard,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -28,6 +31,9 @@ const navigation = [
   { id: 'exchange', label: 'Exchange', icon: TrendingUp },
   { id: 'transfers', label: 'Transfers', icon: Send },
   { id: 'withdrawal', label: 'Withdraw', icon: Building2 },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'cards', label: 'Cards', icon: CreditCard },
+  { id: 'score', label: 'Finance Score', icon: Activity },
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'settings', label: 'Settings', icon: Settings },
