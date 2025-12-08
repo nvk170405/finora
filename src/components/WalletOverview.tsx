@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Eye, EyeOff, Plus, RefreshCw } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 
 // Currency metadata
 const currencyMeta: Record<string, { symbol: string; flag: string }> = {
@@ -18,6 +19,15 @@ const currencyMeta: Record<string, { symbol: string; flag: string }> = {
 export const WalletOverview: React.FC = () => {
   const [showBalances, setShowBalances] = React.useState(true);
   const { wallets, loading, totalPortfolioValue, refreshWallets, createWallet } = useWalletContext();
+  const { defaultCurrency, currencySymbol } = usePreferences();
+
+  // Conversion rates FROM USD to other currencies (approximate)
+  const fromUSDRates: Record<string, number> = {
+    USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149, CAD: 1.36, AUD: 1.53, INR: 83,
+  };
+
+  // Convert total portfolio value to default currency
+  const convertedTotal = totalPortfolioValue * (fromUSDRates[defaultCurrency] || 1);
 
   const handleAddWallet = async () => {
     const currency = prompt('Enter currency code (e.g., USD, EUR, GBP):');
@@ -96,9 +106,9 @@ export const WalletOverview: React.FC = () => {
             className="flex items-baseline space-x-2 mt-2"
           >
             <span className="text-4xl font-bold font-montserrat text-lime-accent font-editorial">
-              {showBalances ? `$${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••••'}
+              {showBalances ? `${currencySymbol}${convertedTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••••'}
             </span>
-            <span className="text-lg text-light-text-secondary dark:text-dark-text-secondary">USD</span>
+            <span className="text-lg text-light-text-secondary dark:text-dark-text-secondary">{defaultCurrency}</span>
           </motion.div>
           <div className="flex items-center space-x-2 mt-3">
             <TrendingUp className="w-4 h-4 text-lime-accent" />

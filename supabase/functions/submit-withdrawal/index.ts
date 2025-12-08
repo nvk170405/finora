@@ -6,6 +6,17 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Minimum withdrawal amounts by currency
+const MIN_WITHDRAWAL: Record<string, number> = {
+    USD: 10,
+    EUR: 10,
+    GBP: 10,
+    INR: 100,
+    JPY: 1000,
+    CAD: 15,
+    AUD: 15,
+}
+
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
@@ -25,19 +36,24 @@ serve(async (req) => {
             walletId,
             amount,
             currency,
+            country,
             accountHolderName,
             accountNumber,
-            ifscCode,
+            bankCode,        // IFSC, Routing Number, Sort Code, IBAN, or SWIFT
+            bankCodeType,    // Type of bank code: IFSC, ROUTING, SORT, IBAN, SWIFT
+            swiftCode,       // Optional SWIFT/BIC for international transfers
             bankName,
         } = await req.json()
 
         // Validate inputs
-        if (!userId || !walletId || !amount || !accountHolderName || !accountNumber || !ifscCode) {
+        if (!userId || !walletId || !amount || !accountHolderName || !accountNumber || !bankCode) {
             throw new Error('Missing required fields')
         }
 
-        if (amount < 100) {
-            throw new Error('Minimum withdrawal amount is ₹100')
+        // Get minimum amount for currency
+        const minAmount = MIN_WITHDRAWAL[currency] || 10
+        if (amount < minAmount) {
+            throw new Error(`Minimum withdrawal amount is ${currency} ${minAmount}`)
         }
 
         // Create Supabase client
@@ -81,7 +97,7 @@ serve(async (req) => {
             throw new Error('Failed to hold funds')
         }
 
-        // Create withdrawal request
+        // Create withdrawal request with international bank details
         const { data: request, error: requestError } = await supabase
             .from('withdrawal_requests')
             .insert({
@@ -89,9 +105,12 @@ serve(async (req) => {
                 wallet_id: walletId,
                 amount: amount,
                 currency: currency || wallet.currency,
+                country: country || 'IN',
                 account_holder_name: accountHolderName,
                 account_number: accountNumber,
-                ifsc_code: ifscCode,
+                bank_code: bankCode,
+                bank_code_type: bankCodeType || 'IFSC',
+                swift_code: swiftCode || null,
                 bank_name: bankName || null,
                 status: 'pending',
             })
@@ -109,6 +128,16 @@ serve(async (req) => {
             throw new Error('Failed to create withdrawal request')
         }
 
+        // Get country name for description
+        const countryNames: Record<string, string> = {
+            IN: 'India',
+            US: 'USA',
+            GB: 'UK',
+            EU: 'Europe',
+            OTHER: 'International',
+        }
+        const countryLabel = countryNames[country] || 'International'
+
         // Record transaction
         await supabase
             .from('transactions')
@@ -118,7 +147,7 @@ serve(async (req) => {
                 type: 'withdrawal',
                 amount: -amount,
                 currency: currency || wallet.currency,
-                description: `Withdrawal to bank A/C ****${accountNumber.slice(-4)}`,
+                description: `Withdrawal to ${countryLabel} bank A/C ****${accountNumber.slice(-4)}`,
                 status: 'pending',
                 category: 'other',
             })
@@ -128,7 +157,7 @@ serve(async (req) => {
                 success: true,
                 message: 'Withdrawal request submitted successfully',
                 requestId: request.id,
-                estimatedTime: '1-3 business days',
+                estimatedTime: country === 'IN' ? '1-3 business days' : '3-5 business days',
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

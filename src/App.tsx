@@ -3,6 +3,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { WalletProvider } from './contexts/WalletContext';
+import { PreferencesProvider } from './contexts/PreferencesContext';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
@@ -24,34 +25,36 @@ function App() {
       <AuthProvider>
         <SubscriptionProvider>
           <WalletProvider>
-            <Router>
-              <div className="font-montserrat min-h-screen bg-light-base dark:bg-dark-base text-light-text dark:text-dark-text font-editorial transition-colors duration-300">
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/features" element={<FeaturesPage />} />
-                  <Route path="/cancellation-refund" element={<CancellationRefundPage />} />
-                  <Route path="/terms" element={<TermsConditionsPage />} />
-                  <Route path="/shipping" element={<ShippingDeliveryPage />} />
-                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                  <Route path="/contact" element={<ContactUsPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<SignUpPage />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/pricing" element={
-                    <ProtectedRoute>
-                      <Pricing />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/*" element={
-                    <ProtectedRoute>
-                      <SubscriptionGate>
-                        <DashboardPage />
-                      </SubscriptionGate>
-                    </ProtectedRoute>
-                  } />
-                </Routes>
-              </div>
-            </Router>
+            <PreferencesProvider>
+              <Router>
+                <div className="font-montserrat min-h-screen bg-light-base dark:bg-dark-base text-light-text dark:text-dark-text font-editorial transition-colors duration-300">
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/features" element={<FeaturesPage />} />
+                    <Route path="/cancellation-refund" element={<CancellationRefundPage />} />
+                    <Route path="/terms" element={<TermsConditionsPage />} />
+                    <Route path="/shipping" element={<ShippingDeliveryPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/contact" element={<ContactUsPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignUpPage />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+                    <Route path="/pricing" element={
+                      <ProtectedRoute>
+                        <Pricing />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/*" element={
+                      <ProtectedRoute>
+                        <SubscriptionGate>
+                          <DashboardPage />
+                        </SubscriptionGate>
+                      </ProtectedRoute>
+                    } />
+                  </Routes>
+                </div>
+              </Router>
+            </PreferencesProvider>
           </WalletProvider>
         </SubscriptionProvider>
       </AuthProvider>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { ThemeToggle } from './ThemeToggle';
 import { userService, UserSettings } from '../services';
 import { useNavigate } from 'react-router-dom';
@@ -24,12 +25,12 @@ import { supabase } from '../config/supabase';
 export const SettingsPage: React.FC = () => {
   const { plan, billingCycle } = useSubscription();
   const { user } = useAuth();
+  const { defaultCurrency, setDefaultCurrency } = usePreferences();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const [defaultCurrency, setDefaultCurrency] = useState('USD');
 
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -67,7 +68,6 @@ export const SettingsPage: React.FC = () => {
         }
 
         setDisplayName(profileData?.display_name || user?.email?.split('@')[0] || '');
-        setDefaultCurrency(profileData?.default_currency || 'USD');
       } catch (err) {
         console.error('Error loading settings:', err);
         setSettings({
@@ -267,6 +267,51 @@ export const SettingsPage: React.FC = () => {
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Default Currency */}
+          <div className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Globe className="w-6 h-6 text-lime-accent" />
+              <h3 className="text-xl font-bold text-light-text dark:text-dark-text">Default Currency</h3>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                This currency will be used as the default across the app for displaying amounts.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { code: 'USD', flag: '🇺🇸', name: 'US Dollar' },
+                  { code: 'EUR', flag: '🇪🇺', name: 'Euro' },
+                  { code: 'GBP', flag: '🇬🇧', name: 'British Pound' },
+                  { code: 'INR', flag: '🇮🇳', name: 'Indian Rupee' },
+                  { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen' },
+                  { code: 'CAD', flag: '🇨🇦', name: 'Canadian Dollar' },
+                  { code: 'AUD', flag: '🇦🇺', name: 'Australian Dollar' },
+                ].map((currency) => (
+                  <button
+                    key={currency.code}
+                    onClick={async () => {
+                      setDefaultCurrency(currency.code);
+                      try {
+                        await userService.upsertProfile({ default_currency: currency.code });
+                        showToast(`Default currency set to ${currency.code}`);
+                      } catch (err) {
+                        console.error('Error saving currency:', err);
+                      }
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all text-center ${defaultCurrency === currency.code
+                      ? 'border-lime-accent bg-lime-accent/10'
+                      : 'border-light-border dark:border-dark-border hover:border-lime-accent/50'
+                      }`}
+                  >
+                    <span className="text-2xl mb-1 block">{currency.flag}</span>
+                    <span className="font-bold text-light-text dark:text-dark-text">{currency.code}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

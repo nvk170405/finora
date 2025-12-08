@@ -34,6 +34,68 @@ const currencySymbols: Record<string, string> = {
     INR: '₹',
 };
 
+// Country bank field configurations
+const countryBankFields: Record<string, {
+    code: string;
+    label: string;
+    placeholder: string;
+    format: RegExp;
+    accountLabel: string;
+    accountPlaceholder: string;
+    swiftRequired?: boolean;
+}> = {
+    IN: {
+        code: 'IFSC',
+        label: 'IFSC Code',
+        placeholder: 'SBIN0001234',
+        format: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+        accountLabel: 'Account Number',
+        accountPlaceholder: 'Enter account number',
+    },
+    US: {
+        code: 'ROUTING',
+        label: 'Routing Number (ABA)',
+        placeholder: '021000021',
+        format: /^\d{9}$/,
+        accountLabel: 'Account Number',
+        accountPlaceholder: 'Enter account number',
+    },
+    GB: {
+        code: 'SORT',
+        label: 'Sort Code',
+        placeholder: '12-34-56',
+        format: /^\d{2}-?\d{2}-?\d{2}$/,
+        accountLabel: 'Account Number',
+        accountPlaceholder: 'Enter 8-digit account number',
+    },
+    EU: {
+        code: 'IBAN',
+        label: 'IBAN',
+        placeholder: 'DE89370400440532013000',
+        format: /^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/,
+        accountLabel: 'Account Holder Name',
+        accountPlaceholder: 'John Doe',
+        swiftRequired: true,
+    },
+    OTHER: {
+        code: 'SWIFT',
+        label: 'SWIFT/BIC Code',
+        placeholder: 'CHASUS33',
+        format: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
+        accountLabel: 'Account Number / IBAN',
+        accountPlaceholder: 'Enter account number or IBAN',
+        swiftRequired: true,
+    },
+};
+
+const countries = [
+    { code: 'IN', name: 'India', flag: '🇮🇳' },
+    { code: 'US', name: 'United States', flag: '🇺🇸' },
+    { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: 'EU', name: 'Europe (SEPA)', flag: '🇪🇺' },
+    { code: 'OTHER', name: 'Other / International', flag: '🌍' },
+];
+
 export const WithdrawalPage: React.FC = () => {
     const { wallets, refreshWallets, refreshTransactions } = useWalletContext();
     const { user } = useAuth();
@@ -46,33 +108,52 @@ export const WithdrawalPage: React.FC = () => {
     const [formData, setFormData] = useState({
         fromWallet: '',
         amount: '',
+        country: 'IN',
         accountHolderName: '',
         accountNumber: '',
         confirmAccountNumber: '',
-        ifscCode: '',
+        bankCode: '', // IFSC, Routing, Sort Code, or SWIFT depending on country
+        swiftCode: '', // For international transfers
         bankName: '',
     });
 
     const selectedWallet = wallets.find(w => w.id === formData.fromWallet);
+    const countryConfig = countryBankFields[formData.country] || countryBankFields.OTHER;
 
     const validateBankDetails = () => {
-        if (formData.accountNumber !== formData.confirmAccountNumber) {
-            setError('Account numbers do not match');
+        // For non-EU/OTHER countries, verify account numbers match
+        if (formData.country !== 'EU') {
+            if (formData.accountNumber !== formData.confirmAccountNumber) {
+                setError('Account numbers do not match');
+                return false;
+            }
+            if (formData.accountNumber.length < 6 || formData.accountNumber.length > 34) {
+                setError('Please enter a valid account number');
+                return false;
+            }
+        }
+
+        // Validate bank code based on country
+        const bankCodeUpper = formData.bankCode.toUpperCase().replace(/\s/g, '');
+        if (!countryConfig.format.test(bankCodeUpper)) {
+            setError(`Please enter a valid ${countryConfig.label} (e.g., ${countryConfig.placeholder})`);
             return false;
         }
-        if (formData.accountNumber.length < 9 || formData.accountNumber.length > 18) {
-            setError('Please enter a valid account number');
-            return false;
+
+        // Validate SWIFT code for international transfers
+        if (countryConfig.swiftRequired && formData.swiftCode) {
+            const swiftRegex = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
+            if (!swiftRegex.test(formData.swiftCode.toUpperCase())) {
+                setError('Please enter a valid SWIFT/BIC code');
+                return false;
+            }
         }
-        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.toUpperCase())) {
-            setError('Please enter a valid IFSC code (e.g., SBIN0001234)');
-            return false;
-        }
+
         return true;
     };
 
     const handleSubmit = async () => {
-        if (!formData.fromWallet || !formData.amount || !formData.accountNumber || !formData.ifscCode) {
+        if (!formData.fromWallet || !formData.amount || !formData.accountNumber || !formData.bankCode) {
             setError('Please fill in all required fields');
             return;
         }
@@ -112,10 +193,13 @@ export const WithdrawalPage: React.FC = () => {
                     userId: user.id,
                     walletId: formData.fromWallet,
                     amount: amount,
-                    currency: selectedWallet?.currency || 'INR',
+                    currency: selectedWallet?.currency || 'USD',
+                    country: formData.country,
                     accountHolderName: formData.accountHolderName,
                     accountNumber: formData.accountNumber,
-                    ifscCode: formData.ifscCode.toUpperCase(),
+                    bankCode: formData.bankCode.toUpperCase(),
+                    bankCodeType: countryConfig.code,
+                    swiftCode: formData.swiftCode?.toUpperCase() || null,
                     bankName: formData.bankName || null,
                 },
             });
@@ -243,7 +327,7 @@ export const WithdrawalPage: React.FC = () => {
                 <div className="bg-light-surface/50 dark:bg-dark-surface/50 border border-light-border dark:border-dark-border rounded-xl p-4 flex items-center space-x-3">
                     <CreditCard className="w-8 h-8 text-lime-accent" />
                     <div>
-                        <p className="font-medium text-light-text dark:text-dark-text">₹0 Fee</p>
+                        <p className="font-medium text-light-text dark:text-dark-text">Zero Fee</p>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">No withdrawal charges</p>
                     </div>
                 </div>
@@ -400,20 +484,53 @@ export const WithdrawalPage: React.FC = () => {
                             )}
                         </div>
 
+                        {/* Country Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
+                                Bank Country
+                            </label>
+                            <select
+                                value={formData.country}
+                                onChange={(e) => setFormData({ ...formData, country: e.target.value, bankCode: '', swiftCode: '' })}
+                                className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
+                            >
+                                {countries.map((c) => (
+                                    <option key={c.code} value={c.code}>
+                                        {c.flag} {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
-                                    IFSC Code
+                                    {countryConfig.label}
                                 </label>
                                 <input
                                     type="text"
-                                    value={formData.ifscCode}
-                                    onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value.toUpperCase() })}
-                                    placeholder="SBIN0001234"
-                                    maxLength={11}
+                                    value={formData.bankCode}
+                                    onChange={(e) => setFormData({ ...formData, bankCode: e.target.value.toUpperCase() })}
+                                    placeholder={countryConfig.placeholder}
+                                    maxLength={34}
                                     className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 uppercase"
                                 />
                             </div>
+                            {countryConfig.swiftRequired && (
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
+                                        SWIFT/BIC Code
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.swiftCode}
+                                        onChange={(e) => setFormData({ ...formData, swiftCode: e.target.value.toUpperCase() })}
+                                        placeholder="CHASUS33"
+                                        maxLength={11}
+                                        className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50 uppercase"
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
                                     Bank Name (Optional)
@@ -422,7 +539,7 @@ export const WithdrawalPage: React.FC = () => {
                                     type="text"
                                     value={formData.bankName}
                                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                                    placeholder="State Bank of India"
+                                    placeholder="Enter bank name"
                                     className="w-full px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
                                 />
                             </div>
@@ -441,7 +558,7 @@ export const WithdrawalPage: React.FC = () => {
                                         setStep(3);
                                     }
                                 }}
-                                disabled={!formData.accountHolderName || !formData.accountNumber || !formData.confirmAccountNumber || !formData.ifscCode}
+                                disabled={!formData.accountHolderName || !formData.accountNumber || !formData.confirmAccountNumber || !formData.bankCode}
                                 className="flex-1 bg-lime-accent text-light-base dark:text-dark-base py-3 rounded-xl font-medium hover:shadow-glow transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
                             >
                                 <span>Review</span>

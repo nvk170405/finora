@@ -35,8 +35,16 @@ const currencyFlags: Record<string, string> = {
 
 const quickAmounts = [50, 100, 250, 500, 1000, 2500];
 
-// Approximate conversion rate for display
-const USD_TO_INR_RATE = 83;
+// Approximate conversion rates to INR for display
+const TO_INR_RATES: Record<string, number> = {
+    USD: 83,
+    EUR: 90,
+    GBP: 105,
+    JPY: 0.56,
+    CAD: 61,
+    AUD: 54,
+    INR: 1, // No conversion needed
+};
 
 export const DepositPage: React.FC = () => {
     const { wallets, refreshWallets } = useWalletContext();
@@ -50,7 +58,20 @@ export const DepositPage: React.FC = () => {
 
     const selectedWallet = wallets.find(w => w.id === formData.walletId);
     const amountNum = parseFloat(formData.amount) || 0;
-    const estimatedINR = Math.round(amountNum * USD_TO_INR_RATE);
+    const currencyRate = TO_INR_RATES[selectedWallet?.currency || 'USD'] || 83;
+    const estimatedINR = Math.round(amountNum * currencyRate);
+
+    // Auto-select wallet matching default currency on load
+    useEffect(() => {
+        if (wallets.length > 0 && !formData.walletId) {
+            // Try to get default currency from localStorage (preferences)
+            const savedCurrency = localStorage.getItem('finora_default_currency') || 'USD';
+            const defaultWallet = wallets.find(w => w.currency === savedCurrency);
+            if (defaultWallet) {
+                setFormData(prev => ({ ...prev, walletId: defaultWallet.id }));
+            }
+        }
+    }, [wallets, formData.walletId]);
 
     // Refresh wallets when deposit is successful
     useEffect(() => {
@@ -206,9 +227,13 @@ export const DepositPage: React.FC = () => {
 
                         {/* Amount Input */}
                         <div>
-                            <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-3">Amount (USD)</label>
+                            <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-3">
+                                Amount ({selectedWallet?.currency || 'Select a wallet'})
+                            </label>
                             <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-light-text-secondary" />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-light-text-secondary">
+                                    {currencySymbols[selectedWallet?.currency || 'USD'] || '$'}
+                                </span>
                                 <input
                                     type="number"
                                     value={formData.amount}
@@ -230,16 +255,22 @@ export const DepositPage: React.FC = () => {
                                             : 'bg-light-glass dark:bg-dark-glass text-light-text dark:text-dark-text hover:bg-lime-accent/20'
                                             }`}
                                     >
-                                        ${amt.toLocaleString()}
+                                        {currencySymbols[selectedWallet?.currency || 'USD']}{amt.toLocaleString()}
                                     </button>
                                 ))}
                             </div>
 
-                            {/* INR Conversion Preview */}
-                            {amountNum > 0 && (
+                            {/* INR Conversion Preview - only show if not INR wallet */}
+                            {amountNum > 0 && selectedWallet?.currency !== 'INR' && (
                                 <div className="mt-3 flex items-center space-x-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
                                     <IndianRupee className="w-4 h-4" />
                                     <span>Approximately ₹{estimatedINR.toLocaleString()} will be charged (via Razorpay)</span>
+                                </div>
+                            )}
+                            {amountNum > 0 && selectedWallet?.currency === 'INR' && (
+                                <div className="mt-3 flex items-center space-x-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                                    <IndianRupee className="w-4 h-4" />
+                                    <span>₹{amountNum.toLocaleString()} will be charged (via Razorpay)</span>
                                 </div>
                             )}
                         </div>
@@ -287,7 +318,12 @@ export const DepositPage: React.FC = () => {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Charged Amount</span>
-                                <span className="text-light-text dark:text-dark-text">₹{estimatedINR.toLocaleString()} (INR)</span>
+                                <span className="text-light-text dark:text-dark-text">
+                                    {selectedWallet?.currency === 'INR'
+                                        ? `₹${amountNum.toLocaleString()} (INR)`
+                                        : `₹${estimatedINR.toLocaleString()} (INR)`
+                                    }
+                                </span>
                             </div>
                             <div className="border-t border-light-border dark:border-dark-border pt-4">
                                 <div className="flex justify-between">
