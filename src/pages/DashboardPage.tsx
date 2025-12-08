@@ -10,6 +10,8 @@ import { SettingsPage } from '../components/SettingsPage';
 import { ProfilePage } from '../components/ProfilePage';
 import { TransfersPage } from '../components/TransfersPage';
 import { DepositPage } from '../components/DepositPage';
+import { WithdrawalPage } from '../components/WithdrawalPage';
+import { AdminWithdrawals } from '../components/AdminWithdrawals';
 
 export const DashboardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('wallet');
@@ -29,12 +31,16 @@ export const DashboardPage: React.FC = () => {
         return <DepositPage />;
       case 'transfers':
         return <TransfersPage />;
+      case 'withdrawal':
+        return <WithdrawalPage />;
       case 'insights':
         return <InsightsPage />;
       case 'settings':
         return <SettingsPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'admin-withdrawals':
+        return <AdminWithdrawals />;
       default:
         return <WalletOverview />;
     }

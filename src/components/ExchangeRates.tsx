@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, RefreshCw, Zap, ArrowRightLeft } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw, Zap, ArrowRightLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useExchangeRates } from '../hooks';
+import { useWalletContext } from '../contexts/WalletContext';
 
 const currencies = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF'];
 const currencySymbols: Record<string, string> = {
@@ -17,12 +18,16 @@ const currencySymbols: Record<string, string> = {
 
 export const ExchangeRates: React.FC = () => {
   const { rates, loading, lastUpdate, forceRefresh, refreshing, convert } = useExchangeRates();
+  const { exchange, getWalletByCurrency } = useWalletContext();
 
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('INR');
   const [fromAmount, setFromAmount] = useState('1000');
   const [toAmount, setToAmount] = useState('');
   const [converting, setConverting] = useState(false);
+  const [exchanging, setExchanging] = useState(false);
+  const [exchangeSuccess, setExchangeSuccess] = useState(false);
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
 
   const doConvert = useCallback(async () => {
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
@@ -98,6 +103,57 @@ export const ExchangeRates: React.FC = () => {
       setToAmount('N/A');
     } finally {
       setConverting(false);
+    }
+  };
+
+  const handleExchange = async () => {
+    if (!fromAmount || parseFloat(fromAmount) <= 0 || !toAmount || toAmount === 'N/A' || toAmount === '...') {
+      return;
+    }
+
+    // Check if user has both wallets
+    const sourceWallet = getWalletByCurrency(fromCurrency);
+    const destWallet = getWalletByCurrency(toCurrency);
+
+    if (!sourceWallet) {
+      setExchangeError(`No ${fromCurrency} wallet found. Please create one first in Wallet section.`);
+      return;
+    }
+    if (!destWallet) {
+      setExchangeError(`No ${toCurrency} wallet found. Please create one first in Wallet section.`);
+      return;
+    }
+
+    const fromAmountNum = parseFloat(fromAmount);
+    const toAmountNum = parseFloat(toAmount.replace(/,/g, ''));
+
+    if (sourceWallet.balance < fromAmountNum) {
+      setExchangeError(`Insufficient ${fromCurrency} balance. You have ${currencySymbols[fromCurrency]}${sourceWallet.balance.toLocaleString()}`);
+      return;
+    }
+
+    setExchanging(true);
+    setExchangeSuccess(false);
+    setExchangeError(null);
+
+    try {
+      const success = await exchange(fromCurrency, toCurrency, fromAmountNum, toAmountNum);
+
+      if (success) {
+        setExchangeSuccess(true);
+        // Reset after 3 seconds
+        setTimeout(() => {
+          setExchangeSuccess(false);
+          setFromAmount('100');
+          doConvert();
+        }, 3000);
+      } else {
+        setExchangeError('Exchange failed. Please try again.');
+      }
+    } catch (err: any) {
+      setExchangeError(err.message || 'Exchange failed');
+    } finally {
+      setExchanging(false);
     }
   };
 
@@ -206,6 +262,25 @@ export const ExchangeRates: React.FC = () => {
         className="bg-gradient-to-r from-light-surface/80 to-light-glass dark:from-dark-surface/80 dark:to-dark-glass border border-light-border dark:border-dark-border rounded-2xl p-6"
       >
         <h3 className="text-xl font-bold text-light-text dark:text-dark-text mb-4">Quick Exchange</h3>
+
+        {/* Error Alert */}
+        {exchangeError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4 flex items-center space-x-2"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-red-500 text-sm">{exchangeError}</p>
+            <button
+              onClick={() => setExchangeError(null)}
+              className="ml-auto text-red-500 hover:text-red-400"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
           {/* From */}
           <div className="md:col-span-3">
@@ -267,8 +342,28 @@ export const ExchangeRates: React.FC = () => {
           <span className="text-light-text-secondary dark:text-dark-text-secondary">
             1 {fromCurrency} ≈ {toAmount && fromAmount && !converting ? (parseFloat(toAmount.replace(/,/g, '')) / parseFloat(fromAmount)).toFixed(4) : '...'} {toCurrency}
           </span>
-          <motion.button whileHover={{ scale: 1.05 }} className="bg-lime-accent text-dark-base px-6 py-2 rounded-xl font-medium hover:shadow-glow">
-            Exchange Now
+          <motion.button
+            whileHover={{ scale: exchanging ? 1 : 1.05 }}
+            onClick={handleExchange}
+            disabled={exchanging || !fromAmount || parseFloat(fromAmount) <= 0 || !toAmount || toAmount === 'N/A'}
+            className={`px-6 py-2 rounded-xl font-medium transition-all flex items-center space-x-2 disabled:opacity-50 ${exchangeSuccess
+              ? 'bg-green-500 text-white'
+              : 'bg-lime-accent text-dark-base hover:shadow-glow'
+              }`}
+          >
+            {exchanging ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : exchangeSuccess ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                <span>Exchange Complete!</span>
+              </>
+            ) : (
+              <span>Exchange Now</span>
+            )}
           </motion.button>
         </div>
       </motion.div>

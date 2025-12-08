@@ -10,7 +10,8 @@ import {
   ChevronRight,
   User,
   Crown,
-  Plus
+  Plus,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -26,9 +27,11 @@ const navigation = [
   { id: 'deposit', label: 'Deposit', icon: Plus },
   { id: 'exchange', label: 'Exchange', icon: TrendingUp },
   { id: 'transfers', label: 'Transfers', icon: Send },
+  { id: 'withdrawal', label: 'Withdraw', icon: Building2 },
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'admin-withdrawals', label: 'Admin', icon: Settings, adminOnly: true },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
@@ -84,55 +87,64 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
-        {navigation.map((item) => {
-          const isActive = activeSection === item.id;
-          return (
-            <motion.button
-              key={item.id}
-              onClick={() => onSectionChange(item.id)}
-              className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all relative group ${isActive
+        {navigation
+          .filter((item) => {
+            // Only show admin items to admin email
+            if (item.adminOnly) {
+              const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+              return user?.email === ADMIN_EMAIL;
+            }
+            return true;
+          })
+          .map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <motion.button
+                key={item.id}
+                onClick={() => onSectionChange(item.id)}
+                className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all relative group ${isActive
                   ? 'bg-lime-accent/10 text-lime-accent'
                   : 'text-light-text font-montserrat dark:text-dark-text hover:bg-light-glass dark:hover:bg-dark-glass hover:text-lime-accent'
-                }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className={`relative ${isActive ? 'drop-shadow-glow' : ''}`}>
-                <item.icon className="w-6 h-6" />
+                  }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className={`relative ${isActive ? 'drop-shadow-glow' : ''}`}>
+                  <item.icon className="w-6 h-6" />
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeGlow"
+                      className="absolute inset-0 bg-lime-accent/20 rounded-full blur-sm"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  )}
+                </div>
+
+                {!isCollapsed && (
+                  <motion.span
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: isCollapsed ? 0 : 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="font-medium font-montserrat font-editorial"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+
                 {isActive && (
                   <motion.div
-                    layoutId="activeGlow"
-                    className="absolute inset-0 bg-lime-accent/20 rounded-full blur-sm"
+                    layoutId="activeIndicator"
+                    className="absolute right-0 w-1 h-8 bg-lime-accent rounded-l-full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
                   />
                 )}
-              </div>
-
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 1 }}
-                  animate={{ opacity: isCollapsed ? 0 : 1 }}
-                  transition={{ duration: 0.2 }}
-                  className="font-medium font-montserrat font-editorial"
-                >
-                  {item.label}
-                </motion.span>
-              )}
-
-              {isActive && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="absolute right-0 w-1 h-8 bg-lime-accent rounded-l-full"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </motion.button>
-          );
-        })}
+              </motion.button>
+            );
+          })}
       </nav>
 
       {/* Footer */}

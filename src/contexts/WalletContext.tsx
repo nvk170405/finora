@@ -12,6 +12,7 @@ interface WalletContextType {
     createWallet: (currency: string) => Promise<Wallet | null>;
     deposit: (walletId: string, amount: number, description?: string) => Promise<boolean>;
     withdraw: (walletId: string, amount: number, recipient: string, description?: string) => Promise<boolean>;
+    exchange: (fromCurrency: string, toCurrency: string, fromAmount: number, toAmount: number) => Promise<boolean>;
     getWalletByCurrency: (currency: string) => Wallet | undefined;
 }
 
@@ -136,6 +137,55 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     };
 
+    const exchange = async (
+        fromCurrency: string,
+        toCurrency: string,
+        fromAmount: number,
+        toAmount: number
+    ): Promise<boolean> => {
+        try {
+            const fromWallet = wallets.find(w => w.currency === fromCurrency);
+            const toWallet = wallets.find(w => w.currency === toCurrency);
+
+            if (!fromWallet) throw new Error(`No ${fromCurrency} wallet found. Please create one first.`);
+            if (!toWallet) throw new Error(`No ${toCurrency} wallet found. Please create one first.`);
+            if (fromWallet.balance < fromAmount) throw new Error(`Insufficient ${fromCurrency} balance`);
+
+            // Deduct from source wallet
+            await walletService.updateBalance(fromWallet.id, fromWallet.balance - fromAmount);
+
+            // Add to destination wallet
+            await walletService.updateBalance(toWallet.id, toWallet.balance + toAmount);
+
+            // Record exchange transaction (debit)
+            await transactionService.createTransaction({
+                wallet_id: fromWallet.id,
+                type: 'exchange',
+                amount: -fromAmount,
+                currency: fromCurrency,
+                description: `Exchanged to ${toAmount.toFixed(2)} ${toCurrency}`,
+                category: 'other',
+            });
+
+            // Record exchange transaction (credit)
+            await transactionService.createTransaction({
+                wallet_id: toWallet.id,
+                type: 'exchange',
+                amount: toAmount,
+                currency: toCurrency,
+                description: `Exchanged from ${fromAmount.toFixed(2)} ${fromCurrency}`,
+                category: 'other',
+            });
+
+            await refreshWallets();
+            await refreshTransactions();
+            return true;
+        } catch (err: any) {
+            setError(err.message);
+            return false;
+        }
+    };
+
     const getWalletByCurrency = (currency: string): Wallet | undefined => {
         return wallets.find(w => w.currency === currency);
     };
@@ -153,6 +203,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 createWallet,
                 deposit,
                 withdraw,
+                exchange,
                 getWalletByCurrency,
             }}
         >
