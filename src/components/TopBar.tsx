@@ -5,6 +5,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useWalletContext } from '../contexts/WalletContext';
+import { supabase } from '../config/supabase';
 
 interface TopBarProps {
   onNavigate?: (section: string) => void;
@@ -23,9 +24,33 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [markedReadAt, setMarkedReadAt] = useState<Date | null>(null);
   const { user, logout } = useAuth();
   const { plan, trialDaysRemaining, isTrialExpired } = useSubscription();
   const { transactions } = useWalletContext();
+
+  // Load the user's "marked read at" timestamp from database
+  useEffect(() => {
+    const loadReadTimestamp = async () => {
+      if (!user || !supabase) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('notification_read_timestamps')
+          .select('marked_read_at')
+          .eq('user_id', user.id)
+          .single();
+
+        if (data && !error) {
+          setMarkedReadAt(new Date(data.marked_read_at));
+        }
+      } catch (err) {
+        console.error('Failed to load notification read timestamp:', err);
+      }
+    };
+
+    loadReadTimestamp();
+  }, [user, supabase]);
 
   // Generate notifications from recent transactions
   useEffect(() => {
@@ -34,14 +59,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
     // Add transaction-based notifications
     if (transactions.length > 0) {
       const recent = transactions.slice(0, 3);
-      recent.forEach((tx, index) => {
+      recent.forEach((tx) => {
         const isDeposit = tx.type === 'deposit';
+        const txDate = new Date(tx.created_at);
+        // Mark as read if created before the "marked read at" timestamp
+        const isRead = markedReadAt ? txDate <= markedReadAt : false;
+
         recentNotifications.push({
           id: tx.id,
           title: isDeposit ? 'Deposit received' : 'Transaction completed',
           message: `${isDeposit ? '+' : '-'}$${Math.abs(tx.amount).toLocaleString()} ${tx.description || tx.category || ''}`,
-          time: new Date(tx.created_at).toLocaleString(),
-          unread: index < 2,
+          time: txDate.toLocaleString(),
+          unread: !isRead,
           type: 'transaction',
         });
       });
@@ -49,28 +78,31 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
 
     // Add default notifications if none
     if (recentNotifications.length === 0) {
-      recentNotifications.push(
-        {
-          id: 'welcome',
-          title: 'Welcome to FinoraX!',
-          message: 'Your account is set up and ready to use.',
-          time: 'Just now',
-          unread: true,
-          type: 'info',
-        },
-        {
-          id: 'rates',
-          title: 'Exchange rates updated',
-          message: 'Live rates are now available in the Exchange section.',
-          time: '5 minutes ago',
-          unread: true,
-          type: 'alert',
-        }
-      );
+      // Only show these if user hasn't marked all as read
+      if (!markedReadAt) {
+        recentNotifications.push(
+          {
+            id: 'welcome',
+            title: 'Welcome to FinoraX!',
+            message: 'Your account is set up and ready to use.',
+            time: 'Just now',
+            unread: true,
+            type: 'info',
+          },
+          {
+            id: 'rates',
+            title: 'Exchange rates updated',
+            message: 'Live rates are now available in the Exchange section.',
+            time: '5 minutes ago',
+            unread: true,
+            type: 'alert',
+          }
+        );
+      }
     }
 
     setNotifications(recentNotifications);
-  }, [transactions]);
+  }, [transactions, markedReadAt]);
 
   const handleLogout = async () => {
     try {
@@ -87,8 +119,25 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
     );
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Update local state immediately
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    setMarkedReadAt(new Date());
+
+    // Persist to database
+    if (user && supabase) {
+      try {
+        await supabase
+          .from('notification_read_timestamps')
+          .upsert({
+            user_id: user.id,
+            marked_read_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+      } catch (err) {
+        console.error('Failed to save notification read timestamp:', err);
+      }
+    }
   };
 
   const clearAllNotifications = () => {
