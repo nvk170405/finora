@@ -21,9 +21,8 @@ export const SignUpPage: React.FC = () => {
     try {
       const { error } = await signup(email, password, name);
       if (error) throw error;
-      alert('Verification email sent. Please check your inbox.');
-      // Use hard redirect to avoid hash navigation issues
-      window.location.href = '/pricing';
+      // Redirect to auth callback which will auto-start 7-day trial
+      window.location.href = '/auth/callback';
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
