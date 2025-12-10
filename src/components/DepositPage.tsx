@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
 import { useWalletDeposit } from '../hooks/useWalletDeposit';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabase';
 
 const currencySymbols: Record<string, string> = {
     USD: '$',
@@ -49,7 +51,9 @@ const TO_INR_RATES: Record<string, number> = {
 export const DepositPage: React.FC = () => {
     const { wallets, refreshWallets } = useWalletContext();
     const { initiateDeposit, loading, error, success, resetState } = useWalletDeposit();
+    const { user } = useAuth();
     const [step, setStep] = useState(1);
+    const [emailSent, setEmailSent] = useState(false);
 
     const [formData, setFormData] = useState({
         walletId: '',
@@ -73,12 +77,32 @@ export const DepositPage: React.FC = () => {
         }
     }, [wallets, formData.walletId]);
 
-    // Refresh wallets when deposit is successful
+    // Refresh wallets and send email when deposit is successful
     useEffect(() => {
-        if (success) {
+        if (success && !emailSent) {
             refreshWallets();
+
+            // Send email notification
+            const sendEmail = async () => {
+                try {
+                    await supabase.functions.invoke('send-email', {
+                        body: {
+                            type: 'deposit',
+                            userId: user?.id,
+                            data: {
+                                amount: formData.amount,
+                                currency: selectedWallet?.currency || 'USD'
+                            }
+                        }
+                    });
+                    setEmailSent(true);
+                } catch (err) {
+                    console.error('Failed to send email:', err);
+                }
+            };
+            sendEmail();
         }
-    }, [success, refreshWallets]);
+    }, [success, emailSent, user?.id, formData.amount, selectedWallet?.currency, refreshWallets]);
 
     const handleDeposit = async () => {
         if (!formData.walletId || !formData.amount) return;
