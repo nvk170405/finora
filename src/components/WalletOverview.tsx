@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Eye, EyeOff, Plus, RefreshCw } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
@@ -16,18 +16,50 @@ const currencyMeta: Record<string, { symbol: string; flag: string }> = {
   INR: { symbol: '₹', flag: '🇮🇳' },
 };
 
+// Exchange rates TO USD (base currency for conversion)
+// These are approximate rates - in production, use a real API
+const toUSDRates: Record<string, number> = {
+  USD: 1,
+  EUR: 1.09,    // 1 EUR = 1.09 USD
+  GBP: 1.27,    // 1 GBP = 1.27 USD
+  JPY: 0.0067,  // 1 JPY = 0.0067 USD
+  CAD: 0.74,    // 1 CAD = 0.74 USD
+  AUD: 0.65,    // 1 AUD = 0.65 USD
+  CHF: 1.13,    // 1 CHF = 1.13 USD
+  INR: 0.012,   // 1 INR = 0.012 USD
+};
+
+// Exchange rates FROM USD to other currencies
+const fromUSDRates: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,    // 1 USD = 0.92 EUR
+  GBP: 0.79,    // 1 USD = 0.79 GBP
+  JPY: 149,     // 1 USD = 149 JPY
+  CAD: 1.36,    // 1 USD = 1.36 CAD
+  AUD: 1.53,    // 1 USD = 1.53 AUD
+  CHF: 0.88,    // 1 USD = 0.88 CHF
+  INR: 83,      // 1 USD = 83 INR
+};
+
 export const WalletOverview: React.FC = () => {
   const [showBalances, setShowBalances] = React.useState(true);
-  const { wallets, loading, totalPortfolioValue, refreshWallets, createWallet } = useWalletContext();
+  const { wallets, loading, refreshWallets, createWallet } = useWalletContext();
   const { defaultCurrency, currencySymbol } = usePreferences();
 
-  // Conversion rates FROM USD to other currencies (approximate)
-  const fromUSDRates: Record<string, number> = {
-    USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149, CAD: 1.36, AUD: 1.53, INR: 83,
-  };
+  // Calculate accurate portfolio value in the default currency
+  const convertedTotal = useMemo(() => {
+    if (!wallets.length) return 0;
 
-  // Convert total portfolio value to default currency
-  const convertedTotal = totalPortfolioValue * (fromUSDRates[defaultCurrency] || 1);
+    // Step 1: Convert all wallet balances to USD first
+    const totalInUSD = wallets.reduce((sum, wallet) => {
+      const rateToUSD = toUSDRates[wallet.currency] || 0.012; // Default to INR rate if unknown
+      return sum + (wallet.balance * rateToUSD);
+    }, 0);
+
+    // Step 2: Convert USD total to the user's default currency
+    const rateFromUSD = fromUSDRates[defaultCurrency] || 1;
+    return totalInUSD * rateFromUSD;
+  }, [wallets, defaultCurrency]);
 
   const handleAddWallet = async () => {
     const currency = prompt('Enter currency code (e.g., USD, EUR, GBP):');
