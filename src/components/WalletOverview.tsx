@@ -155,7 +155,20 @@ export const WalletOverview: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 font-montserrat lg:grid-cols-4 gap-6">
         {wallets.map((wallet, index) => {
           const meta = currencyMeta[wallet.currency] || { symbol: wallet.currency, flag: '💰' };
-          const change = 0; // Will be calculated from transactions later
+
+          // Simulated 24h currency change percentages (vs USD)
+          // In production, get real-time data from an exchange rate API
+          const currencyChanges: Record<string, number> = {
+            USD: 0,      // Base currency
+            EUR: -0.15,  // Euro slightly weaker
+            GBP: 0.23,   // Pound stronger
+            JPY: -0.42,  // Yen weaker
+            CAD: 0.18,   // CAD stronger
+            AUD: -0.31,  // AUD weaker
+            CHF: 0.08,   // Swiss Franc stable
+            INR: -0.12,  // INR slightly weaker
+          };
+          const change = currencyChanges[wallet.currency] ?? 0;
 
           return (
             <motion.div
