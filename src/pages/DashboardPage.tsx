@@ -78,7 +78,7 @@ export const DashboardPage: React.FC = () => {
           <TopBar onNavigate={setActiveSection} />
 
           {/* Content Area */}
-          <div className="flex-1 font-montserrat overflow-auto pb-20">
+          <div className="flex-1 font-montserrat overflow-auto">
             <div className="p-8">
               <AnimatePresence mode="wait">
                 <motion.div
