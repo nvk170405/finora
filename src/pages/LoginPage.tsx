@@ -155,6 +155,14 @@ export const LoginPage: React.FC = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              <div className="mt-2 text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-lime-accent hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button

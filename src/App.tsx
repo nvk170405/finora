@@ -17,6 +17,8 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { ContactUsPage } from './pages/ContactUsPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { VerificationSuccessPage } from './pages/VerificationSuccessPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { SubscriptionGate } from './components/SubscriptionGate';
 
@@ -40,6 +42,8 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
                     <Route path="/verify-success" element={<VerificationSuccessPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/pricing" element={
                       <ProtectedRoute>
