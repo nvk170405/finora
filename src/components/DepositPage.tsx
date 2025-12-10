@@ -84,8 +84,9 @@ export const DepositPage: React.FC = () => {
 
             // Send email notification
             const sendEmail = async () => {
+                console.log('Attempting to send email...', { userId: user?.id, amount: formData.amount, currency: selectedWallet?.currency });
                 try {
-                    await supabase.functions.invoke('send-email', {
+                    const result = await supabase.functions.invoke('send-email', {
                         body: {
                             type: 'deposit',
                             userId: user?.id,
@@ -95,6 +96,7 @@ export const DepositPage: React.FC = () => {
                             }
                         }
                     });
+                    console.log('Email send result:', result);
                     setEmailSent(true);
                 } catch (err) {
                     console.error('Failed to send email:', err);

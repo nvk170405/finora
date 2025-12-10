@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -11,106 +12,123 @@ const templates = {
     deposit: (name: string, amount: string, currency: string) => ({
         subject: `💰 Deposit Confirmed - ${currency} ${amount}`,
         html: `
-            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #a3e635; margin: 0;">FinoraX</h1>
-                </div>
-                <h2 style="color: #ffffff; margin-bottom: 20px;">Deposit Confirmed! 🎉</h2>
-                <p style="color: #a0a0a0; line-height: 1.6;">Hi ${name},</p>
-                <p style="color: #a0a0a0; line-height: 1.6;">Your deposit has been successfully processed:</p>
-                <div style="background: #252545; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                    <p style="margin: 0; font-size: 24px; color: #a3e635; font-weight: bold;">${currency} ${amount}</p>
-                    <p style="margin: 10px 0 0 0; color: #a0a0a0; font-size: 14px;">Added to your wallet</p>
-                </div>
-                <p style="color: #a0a0a0; line-height: 1.6;">Your funds are now available in your dashboard.</p>
-                <a href="https://finorax.com/dashboard" style="display: inline-block; background: #a3e635; color: #1a1a2e; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px;">View Dashboard</a>
-                <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated email from FinoraX. Please do not reply.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">Deposit Confirmed! 🎉</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">Your deposit of <strong style="color: #a3e635;">${currency} ${amount}</strong> has been successfully processed.</p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX.</p>
             </div>
         `
     }),
-
     withdrawal: (name: string, amount: string, currency: string, status: string) => ({
         subject: `🏦 Withdrawal ${status === 'pending' ? 'Initiated' : 'Processed'} - ${currency} ${amount}`,
         html: `
-            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #a3e635; margin: 0;">FinoraX</h1>
-                </div>
-                <h2 style="color: #ffffff; margin-bottom: 20px;">Withdrawal ${status === 'pending' ? 'Initiated' : 'Completed'}</h2>
-                <p style="color: #a0a0a0; line-height: 1.6;">Hi ${name},</p>
-                <p style="color: #a0a0a0; line-height: 1.6;">Your withdrawal request has been ${status === 'pending' ? 'initiated' : 'processed'}:</p>
-                <div style="background: #252545; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                    <p style="margin: 0; font-size: 24px; color: #f59e0b; font-weight: bold;">${currency} ${amount}</p>
-                    <p style="margin: 10px 0 0 0; color: #a0a0a0; font-size: 14px;">Status: ${status.charAt(0).toUpperCase() + status.slice(1)}</p>
-                </div>
-                <p style="color: #a0a0a0; line-height: 1.6;">${status === 'pending' ? 'Your withdrawal is being processed and will be credited to your bank account within 1-3 business days.' : 'Your funds have been transferred to your bank account.'}</p>
-                <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated email from FinoraX. Please do not reply.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">Withdrawal ${status === 'pending' ? 'Initiated' : 'Completed'}</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">Your withdrawal of <strong style="color: #f59e0b;">${currency} ${amount}</strong> has been ${status}.</p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX.</p>
             </div>
         `
     }),
-
     trialExpiring: (name: string, daysLeft: number) => ({
-        subject: `⏰ Your FinoraX trial expires in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`,
-        html: `
-            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #a3e635; margin: 0;">FinoraX</h1>
-                </div>
-                <h2 style="color: #ffffff; margin-bottom: 20px;">Your Trial is Ending Soon! ⏰</h2>
-                <p style="color: #a0a0a0; line-height: 1.6;">Hi ${name},</p>
-                <p style="color: #a0a0a0; line-height: 1.6;">Your 7-day free trial expires in <strong style="color: #f59e0b;">${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}</strong>.</p>
-                <div style="background: #252545; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                    <p style="margin: 0; color: #a0a0a0;">Don't lose access to:</p>
-                    <ul style="color: #a3e635; margin: 15px 0;">
-                        <li>Multi-currency wallets</li>
-                        <li>AI-powered insights</li>
-                        <li>Smart savings goals</li>
-                        <li>Finance health score</li>
-                    </ul>
-                </div>
-                <a href="https://finorax.com/pricing" style="display: inline-block; background: #a3e635; color: #1a1a2e; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px;">Upgrade Now</a>
-                <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated email from FinoraX. Please do not reply.</p>
-            </div>
-        `
+        subject: `⏰ Your FinoraX trial expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
+        html: `<div style="font-family: Arial;"><h1>FinoraX</h1><p>Hi ${name}, your trial expires in ${daysLeft} days!</p></div>`
     }),
-
     trialExpired: (name: string) => ({
         subject: `😢 Your FinoraX trial has expired`,
-        html: `
-            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #a3e635; margin: 0;">FinoraX</h1>
-                </div>
-                <h2 style="color: #ffffff; margin-bottom: 20px;">Your Trial Has Expired</h2>
-                <p style="color: #a0a0a0; line-height: 1.6;">Hi ${name},</p>
-                <p style="color: #a0a0a0; line-height: 1.6;">Your 7-day free trial has ended. Subscribe now to continue using all premium features!</p>
-                <div style="background: #252545; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
-                    <p style="margin: 0; font-size: 18px; color: #a3e635;">Get 20% off your first month!</p>
-                    <p style="margin: 10px 0 0 0; color: #a0a0a0; font-size: 14px;">Use code: <strong>COMEBACK20</strong></p>
-                </div>
-                <a href="https://finorax.com/pricing" style="display: inline-block; background: #a3e635; color: #1a1a2e; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px;">Subscribe Now</a>
-                <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated email from FinoraX. Please do not reply.</p>
-            </div>
-        `
+        html: `<div style="font-family: Arial;"><h1>FinoraX</h1><p>Hi ${name}, your trial has expired. Subscribe to continue!</p></div>`
     }),
 }
 
-serve(async (req) => {
+// Simple SMTP client using Deno.connect (Deno v2 compatible)
+async function sendGmailSMTP(
+    user: string,
+    password: string,
+    to: string,
+    subject: string,
+    html: string
+) {
+    const encoder = new TextEncoder()
+    const decoder = new TextDecoder()
+
+    // Connect to Gmail SMTP
+    const conn = await Deno.connectTls({
+        hostname: "smtp.gmail.com",
+        port: 465,
+    })
+
+    const read = async () => {
+        const buf = new Uint8Array(1024)
+        const n = await conn.read(buf)
+        return n ? decoder.decode(buf.subarray(0, n)) : ""
+    }
+
+    const write = async (data: string) => {
+        await conn.write(encoder.encode(data + "\r\n"))
+    }
+
+    // SMTP conversation
+    await read() // 220 greeting
+
+    await write(`EHLO localhost`)
+    await read() // 250 capabilities
+
+    await write(`AUTH LOGIN`)
+    await read() // 334
+
+    await write(encodeBase64(user))
+    await read() // 334
+
+    await write(encodeBase64(password))
+    const authResponse = await read()
+    if (!authResponse.includes("235")) {
+        throw new Error("SMTP authentication failed")
+    }
+
+    await write(`MAIL FROM:<${user}>`)
+    await read() // 250
+
+    await write(`RCPT TO:<${to}>`)
+    await read() // 250
+
+    await write(`DATA`)
+    await read() // 354
+
+    // Construct email with proper headers
+    const email = [
+        `From: FinoraX <${user}>`,
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        `MIME-Version: 1.0`,
+        `Content-Type: text/html; charset=UTF-8`,
+        ``,
+        html,
+        `.`
+    ].join("\r\n")
+
+    await write(email)
+    await read() // 250 OK
+
+    await write(`QUIT`)
+    conn.close()
+}
+
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
-        const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+        const GMAIL_USER = Deno.env.get('GMAIL_USER')
+        const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD')
         const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
         const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-        if (!RESEND_API_KEY) {
-            throw new Error('Resend API key not configured')
+        if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+            throw new Error('Gmail credentials not configured')
         }
 
         const { type, userId, data } = await req.json()
@@ -133,7 +151,7 @@ serve(async (req) => {
                 emailContent = templates.deposit(name, data.amount, data.currency)
                 break
             case 'withdrawal':
-                emailContent = templates.withdrawal(name, data.amount, data.currency, data.status)
+                emailContent = templates.withdrawal(name, data.amount, data.currency, data.status || 'pending')
                 break
             case 'trial_expiring':
                 emailContent = templates.trialExpiring(name, data.daysLeft)
@@ -145,37 +163,26 @@ serve(async (req) => {
                 throw new Error('Invalid email type')
         }
 
-        // Send email via Resend
-        const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-                from: 'FinoraX <notifications@finorax.com>',
-                to: [email],
-                subject: emailContent.subject,
-                html: emailContent.html,
-            }),
-        })
+        // Send email via Gmail SMTP
+        await sendGmailSMTP(
+            GMAIL_USER,
+            GMAIL_APP_PASSWORD,
+            email,
+            emailContent.subject,
+            emailContent.html
+        )
 
-        if (!response.ok) {
-            const error = await response.text()
-            throw new Error(`Failed to send email: ${error}`)
-        }
-
-        const result = await response.json()
-        console.log('Email sent:', result.id)
+        console.log('Email sent successfully to:', email)
 
         return new Response(
-            JSON.stringify({ success: true, emailId: result.id }),
+            JSON.stringify({ success: true, message: 'Email sent' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
-    } catch (error) {
-        console.error('Email error:', error.message)
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Email error:', errorMessage)
         return new Response(
-            JSON.stringify({ success: false, error: error.message }),
+            JSON.stringify({ success: false, error: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         )
     }
