@@ -16,6 +16,7 @@ import { ShippingDeliveryPage } from './pages/ShippingDeliveryPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { ContactUsPage } from './pages/ContactUsPage';
 import { AuthCallback } from './pages/AuthCallback';
+import { VerificationSuccessPage } from './pages/VerificationSuccessPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { SubscriptionGate } from './components/SubscriptionGate';
 
@@ -38,6 +39,7 @@ function App() {
                     <Route path="/contact" element={<ContactUsPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
+                    <Route path="/verify-success" element={<VerificationSuccessPage />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/pricing" element={
                       <ProtectedRoute>

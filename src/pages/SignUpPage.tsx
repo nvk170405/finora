@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { TrendingUp, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { BsGoogle, BsApple, BsMeta } from "react-icons/bs";
+
 export const SignUpPage: React.FC = () => {
   const { signup, loginWithGoogle, loginWithApple, loginWithMeta } = useAuth();
 
@@ -12,6 +13,7 @@ export const SignUpPage: React.FC = () => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,8 +23,8 @@ export const SignUpPage: React.FC = () => {
     try {
       const { error } = await signup(email, password, name);
       if (error) throw error;
-      // Redirect to auth callback which will auto-start 7-day trial
-      window.location.href = '/auth/callback';
+      // Show verification message instead of redirecting
+      setVerificationSent(true);
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
@@ -39,6 +41,61 @@ export const SignUpPage: React.FC = () => {
       setError(err.message || 'Social signup failed');
     }
   };
+
+  // Show verification message after signup
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-light-base dark:bg-dark-base">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center"
+        >
+          <Link to="/" className="flex items-center justify-center space-x-2 mb-8">
+            <div className="p-2 bg-lime-accent rounded-lg">
+              <TrendingUp className="w-6 h-6 text-light-base dark:text-dark-base" />
+            </div>
+            <span className="text-2xl font-bold text-lime-accent font-editorial">FinoraX</span>
+          </Link>
+
+          <div className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-2xl p-8 shadow-glass">
+            <div className="w-16 h-16 mx-auto mb-4 bg-lime-accent/20 rounded-full flex items-center justify-center">
+              <Mail className="w-8 h-8 text-lime-accent" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              Verify Your Email
+            </h2>
+
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              We've sent a verification email to:
+            </p>
+
+            <p className="text-lime-accent font-medium mb-6">
+              {email}
+            </p>
+
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <p className="text-blue-400 text-sm">
+                📧 Please check your inbox and click the verification link to activate your account.
+              </p>
+            </div>
+
+            <Link
+              to="/login"
+              className="inline-block w-full bg-lime-accent text-gray-900 py-3 rounded-xl font-medium hover:shadow-glow transition-all"
+            >
+              Go to Login
+            </Link>
+
+            <p className="text-sm text-gray-500 mt-4">
+              Didn't receive the email? Check your spam folder.
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
