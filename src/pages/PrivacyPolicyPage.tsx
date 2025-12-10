@@ -35,7 +35,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                                     <li>Name and email address</li>
                                     <li>Phone number (optional)</li>
                                     <li>Profile picture (optional)</li>
-                                    <li>Payment information (processed securely by Razorpay)</li>
+                                    <li>Payment information (processed securely by our payment partners)</li>
                                 </ul>
                                 <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Usage Information</h3>
                                 <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2">
@@ -75,7 +75,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">4. Data Sharing</h2>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">We do not sell your personal data. We may share information with:</p>
                                 <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2">
-                                    <li><strong>Payment Processors:</strong> Razorpay for secure payment processing</li>
+                                    <li><strong>Payment Processors:</strong> Secure third-party payment processing</li>
                                     <li><strong>Service Providers:</strong> Cloud hosting and analytics services</li>
                                     <li><strong>Legal Requirements:</strong> When required by law or to protect rights</li>
                                 </ul>

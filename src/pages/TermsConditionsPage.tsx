@@ -70,7 +70,7 @@ export const TermsConditionsPage: React.FC = () => {
                                 <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2">
                                     <li>Subscriptions are billed in advance on a monthly or yearly basis</li>
                                     <li>Prices are subject to change with 30 days notice</li>
-                                    <li>All payments are processed securely through Razorpay</li>
+                                    <li>All payments are processed securely through our payment partners</li>
                                     <li>Refunds are subject to our Cancellation & Refund Policy</li>
                                 </ul>
                             </section>

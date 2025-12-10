@@ -6,9 +6,7 @@ import {
     CheckCircle,
     ArrowRight,
     Loader2,
-    DollarSign,
-    AlertCircle,
-    IndianRupee
+    AlertCircle
 } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
 import { useWalletDeposit } from '../hooks/useWalletDeposit';
@@ -37,17 +35,6 @@ const currencyFlags: Record<string, string> = {
 
 const quickAmounts = [50, 100, 250, 500, 1000, 2500];
 
-// Approximate conversion rates to INR for display
-const TO_INR_RATES: Record<string, number> = {
-    USD: 83,
-    EUR: 90,
-    GBP: 105,
-    JPY: 0.56,
-    CAD: 61,
-    AUD: 54,
-    INR: 1, // No conversion needed
-};
-
 export const DepositPage: React.FC = () => {
     const { wallets, refreshWallets } = useWalletContext();
     const { initiateDeposit, loading, error, success, resetState } = useWalletDeposit();
@@ -62,8 +49,6 @@ export const DepositPage: React.FC = () => {
 
     const selectedWallet = wallets.find(w => w.id === formData.walletId);
     const amountNum = parseFloat(formData.amount) || 0;
-    const currencyRate = TO_INR_RATES[selectedWallet?.currency || 'USD'] || 83;
-    const estimatedINR = Math.round(amountNum * currencyRate);
 
     // Auto-select wallet matching default currency on load
     useEffect(() => {
@@ -172,7 +157,7 @@ export const DepositPage: React.FC = () => {
                 transition={{ duration: 0.5 }}
             >
                 <h2 className="text-3xl font-bold text-light-text dark:text-dark-text font-editorial">Add Funds</h2>
-                <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">Deposit money into your wallets using Razorpay</p>
+                <p className="text-light-text-secondary dark:text-dark-text-secondary mt-1">Add funds to your multi-currency wallets securely</p>
             </motion.div>
 
             {/* Progress Steps */}
@@ -286,17 +271,11 @@ export const DepositPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            {/* INR Conversion Preview - only show if not INR wallet */}
-                            {amountNum > 0 && selectedWallet?.currency !== 'INR' && (
-                                <div className="mt-3 flex items-center space-x-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                                    <IndianRupee className="w-4 h-4" />
-                                    <span>Approximately ₹{estimatedINR.toLocaleString()} will be charged (via Razorpay)</span>
-                                </div>
-                            )}
-                            {amountNum > 0 && selectedWallet?.currency === 'INR' && (
-                                <div className="mt-3 flex items-center space-x-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                                    <IndianRupee className="w-4 h-4" />
-                                    <span>₹{amountNum.toLocaleString()} will be charged (via Razorpay)</span>
+                            {/* Deposit Preview */}
+                            {amountNum > 0 && (
+                                <div className="mt-3 flex items-center space-x-2 text-sm text-lime-accent">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span>{currencySymbols[selectedWallet?.currency || 'USD']}{amountNum.toLocaleString()} {selectedWallet?.currency} will be added to your wallet</span>
                                 </div>
                             )}
                         </div>
@@ -339,16 +318,13 @@ export const DepositPage: React.FC = () => {
                                 <span className="text-light-text-secondary dark:text-dark-text-secondary">Payment Method</span>
                                 <span className="text-light-text dark:text-dark-text flex items-center space-x-2">
                                     <CreditCard className="w-4 h-4" />
-                                    <span>Razorpay</span>
+                                    <span>Secure Payment</span>
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-light-text-secondary dark:text-dark-text-secondary">Charged Amount</span>
-                                <span className="text-light-text dark:text-dark-text">
-                                    {selectedWallet?.currency === 'INR'
-                                        ? `₹${amountNum.toLocaleString()} (INR)`
-                                        : `₹${estimatedINR.toLocaleString()} (INR)`
-                                    }
+                                <span className="text-light-text-secondary dark:text-dark-text-secondary">Deposit Amount</span>
+                                <span className="text-light-text dark:text-dark-text font-semibold">
+                                    {currencySymbols[selectedWallet?.currency || 'USD']}{amountNum.toLocaleString()} {selectedWallet?.currency}
                                 </span>
                             </div>
                             <div className="border-t border-light-border dark:border-dark-border pt-4">
@@ -367,12 +343,11 @@ export const DepositPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-start space-x-3">
-                            <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <div className="bg-lime-accent/10 border border-lime-accent/30 rounded-xl p-4 flex items-start space-x-3">
+                            <AlertCircle className="w-5 h-5 text-lime-accent flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="text-blue-500 text-sm">
-                                    You'll be redirected to Razorpay's secure checkout to complete your payment.
-                                    All major cards, UPI, and net banking are accepted.
+                                <p className="text-lime-accent text-sm">
+                                    You'll be directed to our secure payment page. All major payment methods are accepted.
                                 </p>
                             </div>
                         </div>
@@ -395,7 +370,7 @@ export const DepositPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <Plus className="w-5 h-5" />
-                                        <span>Pay with Razorpay</span>
+                                        <span>Complete Deposit</span>
                                     </>
                                 )}
                             </button>
