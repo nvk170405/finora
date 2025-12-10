@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Globe, LogOut, X, Check, Settings, User } from 'lucide-react';
+import { Bell, Globe, LogOut, X, Check, Settings, User, Clock, Crown } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -24,7 +24,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { user, logout } = useAuth();
-  const { plan } = useSubscription();
+  const { plan, trialDaysRemaining, isTrialExpired } = useSubscription();
   const { transactions } = useWalletContext();
 
   // Generate notifications from recent transactions
@@ -127,9 +127,37 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
           <h1 className="text-lg font-bold text-light-text dark:text-dark-text">
             Welcome back, {user?.email?.split('@')[0] || 'User'}!
           </h1>
-          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-            {plan ? `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan` : 'Trial Plan'} • Last login: Today
-          </p>
+          <div className="flex items-center space-x-3">
+            {plan === 'trial' && trialDaysRemaining !== null && !isTrialExpired ? (
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-orange-400" />
+                <span className="text-sm text-orange-400 font-medium">
+                  {trialDaysRemaining} {trialDaysRemaining === 1 ? 'day' : 'days'} left in trial
+                </span>
+                <a
+                  href="/pricing"
+                  className="text-xs bg-lime-accent text-dark-base px-2 py-1 rounded-full font-medium hover:shadow-glow transition-all"
+                >
+                  Upgrade Now
+                </a>
+              </div>
+            ) : plan === 'trial' && isTrialExpired ? (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-red-400 font-medium">Trial expired</span>
+                <a
+                  href="/pricing"
+                  className="text-xs bg-lime-accent text-dark-base px-2 py-1 rounded-full font-medium hover:shadow-glow transition-all"
+                >
+                  Subscribe Now
+                </a>
+              </div>
+            ) : (
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                <Crown className="w-4 h-4 inline mr-1 text-lime-accent" />
+                {plan ? `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan` : 'Free Plan'} • Last login: Today
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
