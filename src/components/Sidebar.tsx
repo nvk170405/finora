@@ -14,7 +14,8 @@ import {
   Building2,
   Target,
   CreditCard,
-  Activity
+  Activity,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -31,6 +32,8 @@ const navigation = [
   { id: 'exchange', label: 'Exchange', icon: TrendingUp },
   { id: 'transfers', label: 'Transfers', icon: Send },
   { id: 'withdrawal', label: 'Withdraw', icon: Building2 },
+  { id: 'transactions', label: 'Transactions', icon: BarChart3 },
+  { id: 'recurring', label: 'Recurring', icon: Clock },
   { id: 'goals', label: 'Goals', icon: Target },
   { id: 'cards', label: 'Cards', icon: CreditCard },
   { id: 'score', label: 'Finance Score', icon: Activity },

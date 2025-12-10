@@ -15,6 +15,8 @@ import { AdminWithdrawals } from '../components/AdminWithdrawals';
 import { SavingsGoalsPage } from '../components/SavingsGoalsPage';
 import { VirtualCardsPage } from '../components/VirtualCardsPage';
 import { FinanceScorePage } from '../components/FinanceScorePage';
+import { TransactionsPage } from '../components/TransactionsPage';
+import { RecurringDepositsPage } from '../components/RecurringDepositsPage';
 
 export const DashboardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('wallet');
@@ -36,8 +38,12 @@ export const DashboardPage: React.FC = () => {
         return <TransfersPage />;
       case 'withdrawal':
         return <WithdrawalPage />;
+      case 'transactions':
+        return <TransactionsPage />;
       case 'goals':
         return <SavingsGoalsPage />;
+      case 'recurring':
+        return <RecurringDepositsPage />;
       case 'cards':
         return <VirtualCardsPage />;
       case 'score':
