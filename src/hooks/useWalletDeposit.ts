@@ -68,13 +68,17 @@ export const useWalletDeposit = (): UseWalletDepositReturn => {
 
                 console.log('✅ Order created:', orderData);
 
+                // Get currency symbol for display
+                const currencySymbol = orderData.currencySymbol || '$';
+                const originalCurrency = orderData.originalCurrency || currency;
+
                 // Open Razorpay checkout
                 const options = {
                     key: RAZORPAY_KEY_ID,
                     amount: orderData.amount,
-                    currency: 'INR',
+                    currency: 'INR', // Razorpay only accepts INR for Indian accounts
                     name: 'FinoraX',
-                    description: `Wallet Deposit - $${amount}`,
+                    description: `Wallet Deposit - ${currencySymbol}${amount} ${originalCurrency}`,
                     order_id: orderData.orderId,
                     handler: async (response: RazorpayResponse) => {
                         try {
@@ -122,7 +126,7 @@ export const useWalletDeposit = (): UseWalletDepositReturn => {
                     notes: {
                         amountInINR: orderData.amountInINR,
                         originalAmount: amount,
-                        originalCurrency: currency,
+                        originalCurrency: originalCurrency,
                     },
                 };
 

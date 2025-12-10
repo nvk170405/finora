@@ -5,6 +5,28 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Exchange rates TO INR (Razorpay only accepts INR)
+const TO_INR_RATES: Record<string, number> = {
+    USD: 83,
+    EUR: 90,
+    GBP: 105,
+    JPY: 0.56,
+    CAD: 61,
+    AUD: 54,
+    INR: 1, // No conversion needed
+}
+
+// Currency symbols for display
+const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    CAD: 'C$',
+    AUD: 'A$',
+    INR: '₹',
+}
+
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
@@ -30,12 +52,21 @@ serve(async (req) => {
             throw new Error('Amount must be greater than 0')
         }
 
+        // Get conversion rate for the currency (or default to USD rate)
+        const currencyCode = currency || 'USD'
+        const conversionRate = TO_INR_RATES[currencyCode] || TO_INR_RATES.USD
+        const currencySymbol = CURRENCY_SYMBOLS[currencyCode] || '$'
+
+        // Convert to INR (Razorpay only accepts INR for Indian accounts)
+        // If the currency IS INR, no conversion needed
+        const amountInINR = currencyCode === 'INR'
+            ? Math.round(amount)  // Already in INR
+            : Math.round(amount * conversionRate)  // Convert to INR
+
         // Convert to paise (smallest currency unit)
-        // For simplicity, we'll convert USD to INR at a fixed rate for now
-        // In production, you'd want to use real-time exchange rates
-        const USD_TO_INR_RATE = 83; // Approximate rate
-        const amountInINR = Math.round(amount * USD_TO_INR_RATE);
-        const amountInPaise = amountInINR * 100;
+        const amountInPaise = amountInINR * 100
+
+        console.log(`Deposit: ${currencySymbol}${amount} ${currencyCode} = ₹${amountInINR} (${amountInPaise} paise)`)
 
         // Create short receipt (max 40 chars)
         const shortUserId = userId.substring(0, 8)
@@ -44,13 +75,14 @@ serve(async (req) => {
 
         const orderData = {
             amount: amountInPaise,
-            currency: 'INR',
+            currency: 'INR', // Razorpay only accepts INR for Indian merchant accounts
             receipt: receipt,
             notes: {
                 userId: userId,
                 walletId: walletId,
                 originalAmount: amount,
-                originalCurrency: currency || 'USD',
+                originalCurrency: currencyCode,
+                amountInINR: amountInINR,
                 type: 'wallet_deposit'
             }
         }
@@ -80,6 +112,8 @@ serve(async (req) => {
                 amount: order.amount,
                 amountInINR: amountInINR,
                 originalAmount: amount,
+                originalCurrency: currencyCode,
+                currencySymbol: currencySymbol,
                 currency: order.currency,
             }),
             {
