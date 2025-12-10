@@ -43,7 +43,8 @@ export const LoginPage: React.FC = () => {
         if (subData && subData.plan) {
           window.location.href = '/dashboard';
         } else {
-          window.location.href = '/pricing';
+          // No subscription - redirect to auth callback to start trial
+          window.location.href = '/auth/callback';
         }
       }
     } catch (err: any) {
