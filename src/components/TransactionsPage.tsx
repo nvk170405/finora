@@ -1,18 +1,45 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Download, FileText, Filter, Search, Calendar, ArrowUpDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, FileText, Filter, Search, Calendar, ArrowUpDown, Plus, X } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { exportService } from '../services/exportService';
+import { supabase } from '../config/supabase';
+
+const categories = [
+    'Food & Dining',
+    'Shopping',
+    'Transportation',
+    'Entertainment',
+    'Bills & Utilities',
+    'Healthcare',
+    'Education',
+    'Travel',
+    'Salary',
+    'Investment',
+    'Gift',
+    'Other'
+];
 
 export const TransactionsPage: React.FC = () => {
-    const { transactions } = useWalletContext();
+    const { transactions, wallets, refreshTransactions } = useWalletContext();
     const { user } = useAuth();
+    const { currencySymbol, defaultCurrency } = usePreferences();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'deposit' | 'expense' | 'transfer'>('all');
     const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [newTransaction, setNewTransaction] = useState({
+        type: 'expense' as 'deposit' | 'expense',
+        amount: '',
+        description: '',
+        category: 'Other',
+        walletId: '',
+    });
 
     // Filter and sort transactions
     const filteredTransactions = useMemo(() => {
@@ -59,6 +86,37 @@ export const TransactionsPage: React.FC = () => {
         exportService.exportToPDF(filteredTransactions, user?.email || 'User', 'finorax_transactions');
     };
 
+    const handleAddTransaction = async () => {
+        if (!newTransaction.amount || !newTransaction.walletId) return;
+
+        setSaving(true);
+        try {
+            const wallet = wallets.find(w => w.id === newTransaction.walletId);
+            const amount = parseFloat(newTransaction.amount);
+            const finalAmount = newTransaction.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
+
+            const { error } = await supabase.from('transactions').insert({
+                user_id: user?.id,
+                wallet_id: newTransaction.walletId,
+                amount: finalAmount,
+                type: newTransaction.type,
+                description: newTransaction.description || `Manual ${newTransaction.type}`,
+                category: newTransaction.category,
+                currency: wallet?.currency || defaultCurrency,
+            });
+
+            if (error) throw error;
+
+            setShowAddModal(false);
+            setNewTransaction({ type: 'expense', amount: '', description: '', category: 'Other', walletId: '' });
+            await refreshTransactions();
+        } catch (err) {
+            console.error('Error adding transaction:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -74,8 +132,17 @@ export const TransactionsPage: React.FC = () => {
                     </p>
                 </div>
 
-                {/* Export Buttons */}
+                {/* Action Buttons */}
                 <div className="flex space-x-3">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-lime-accent text-gray-900 rounded-xl font-medium hover:shadow-glow transition-all"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Transaction</span>
+                    </motion.button>
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -83,7 +150,7 @@ export const TransactionsPage: React.FC = () => {
                         className="flex items-center space-x-2 px-4 py-2 bg-lime-accent/20 text-lime-accent border border-lime-accent/30 rounded-xl hover:bg-lime-accent/30 transition-all"
                     >
                         <Download className="w-4 h-4" />
-                        <span>Export CSV</span>
+                        <span>CSV</span>
                     </motion.button>
                     <motion.button
                         whileHover={{ scale: 1.02 }}
@@ -92,7 +159,7 @@ export const TransactionsPage: React.FC = () => {
                         className="flex items-center space-x-2 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl hover:bg-blue-500/30 transition-all"
                     >
                         <FileText className="w-4 h-4" />
-                        <span>Export PDF</span>
+                        <span>PDF</span>
                     </motion.button>
                 </div>
             </motion.div>
@@ -178,7 +245,14 @@ export const TransactionsPage: React.FC = () => {
             >
                 {filteredTransactions.length === 0 ? (
                     <div className="p-8 text-center">
-                        <p className="text-gray-500">No transactions found</p>
+                        <p className="text-gray-500 mb-4">No transactions found</p>
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="inline-flex items-center space-x-2 px-4 py-2 bg-lime-accent text-gray-900 rounded-xl font-medium"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Your First Transaction</span>
+                        </button>
                     </div>
                 ) : (
                     <div className="divide-y divide-light-border dark:divide-dark-border">
@@ -193,8 +267,8 @@ export const TransactionsPage: React.FC = () => {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-4">
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.amount >= 0
-                                                ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-red-500/20 text-red-400'
+                                            ? 'bg-green-500/20 text-green-400'
+                                            : 'bg-red-500/20 text-red-400'
                                             }`}>
                                             {tx.amount >= 0 ? '↑' : '↓'}
                                         </div>
@@ -221,6 +295,141 @@ export const TransactionsPage: React.FC = () => {
                     </div>
                 )}
             </motion.div>
+
+            {/* Add Transaction Modal */}
+            <AnimatePresence>
+                {showAddModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowAddModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-light-base dark:bg-dark-base border border-light-border dark:border-dark-border rounded-2xl p-6 w-full max-w-md"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold text-light-text dark:text-dark-text">Add Transaction</h3>
+                                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Type Toggle */}
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        Type
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {(['expense', 'deposit'] as const).map(type => (
+                                            <button
+                                                key={type}
+                                                onClick={() => setNewTransaction({ ...newTransaction, type })}
+                                                className={`py-2 px-4 rounded-lg font-medium transition-colors ${newTransaction.type === type
+                                                        ? type === 'expense'
+                                                            ? 'bg-red-500 text-white'
+                                                            : 'bg-green-500 text-white'
+                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                                    }`}
+                                            >
+                                                {type === 'expense' ? '↓ Expense' : '↑ Income'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Wallet Select */}
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        Wallet
+                                    </label>
+                                    <select
+                                        value={newTransaction.walletId}
+                                        onChange={(e) => setNewTransaction({ ...newTransaction, walletId: e.target.value })}
+                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
+                                    >
+                                        <option value="">Select wallet</option>
+                                        {wallets.map(wallet => (
+                                            <option key={wallet.id} value={wallet.id}>
+                                                {wallet.currency} - Balance: {wallet.balance.toLocaleString()}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Amount */}
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        Amount
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">{currencySymbol}</span>
+                                        <input
+                                            type="number"
+                                            value={newTransaction.amount}
+                                            onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+                                            placeholder="0.00"
+                                            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        Description
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newTransaction.description}
+                                        onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                                        placeholder="e.g., Grocery shopping"
+                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
+                                    />
+                                </div>
+
+                                {/* Category */}
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        Category
+                                    </label>
+                                    <select
+                                        value={newTransaction.category}
+                                        onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
+                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
+                                    >
+                                        {categories.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Submit */}
+                                <button
+                                    onClick={handleAddTransaction}
+                                    disabled={saving || !newTransaction.amount || !newTransaction.walletId}
+                                    className="w-full bg-lime-accent text-gray-900 py-3 rounded-xl font-medium hover:shadow-glow transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+                                >
+                                    {saving ? (
+                                        <span>Saving...</span>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-5 h-5" />
+                                            <span>Add Transaction</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
