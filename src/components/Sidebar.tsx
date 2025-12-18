@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet,
+  TrendingUp,
   BarChart3,
   Settings,
   ChevronLeft,
