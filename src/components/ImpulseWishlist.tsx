@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Clock, Check, X, Trash2, ShoppingBag, Timer, DollarSign } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 
 interface ImpulseItem {
     id: string;
@@ -21,13 +22,14 @@ const categories = ['Electronics', 'Clothing', 'Food', 'Entertainment', 'Home', 
 
 export const ImpulseWishlist: React.FC = () => {
     const { user } = useAuth();
+    const { defaultCurrency, currencySymbol } = usePreferences();
     const [items, setItems] = useState<ImpulseItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newItem, setNewItem] = useState({
         name: '',
         price: '',
-        currency: 'USD',
+        currency: defaultCurrency,
         category: 'Other',
         notes: '',
         timer_hours: 24,
@@ -82,7 +84,7 @@ export const ImpulseWishlist: React.FC = () => {
 
             if (error) throw error;
             setShowAddModal(false);
-            setNewItem({ name: '', price: '', currency: 'USD', category: 'Other', notes: '', timer_hours: 24 });
+            setNewItem({ name: '', price: '', currency: defaultCurrency, category: 'Other', notes: '', timer_hours: 24 });
             fetchItems();
         } catch (err) {
             console.error('Error adding item:', err);
@@ -201,7 +203,7 @@ export const ImpulseWishlist: React.FC = () => {
                         </div>
                         <div>
                             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Money Saved</p>
-                            <p className="text-2xl font-bold text-green-500">${totalSaved.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-green-500">{currencySymbol}{totalSaved.toLocaleString()}</p>
                         </div>
                     </div>
                 </motion.div>
@@ -252,7 +254,7 @@ export const ImpulseWishlist: React.FC = () => {
                                                     {item.name}
                                                 </h4>
                                                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                                                    {item.category} • ${item.price.toLocaleString()}
+                                                    {item.category} • {currencySymbol}{item.price.toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>
@@ -315,8 +317,8 @@ export const ImpulseWishlist: React.FC = () => {
                             <div
                                 key={item.id}
                                 className={`flex items-center justify-between p-4 rounded-xl border ${item.status === 'approved'
-                                        ? 'bg-green-500/10 border-green-500/30'
-                                        : 'bg-red-500/10 border-red-500/30'
+                                    ? 'bg-green-500/10 border-green-500/30'
+                                    : 'bg-red-500/10 border-red-500/30'
                                     }`}
                             >
                                 <div className="flex items-center space-x-3">
@@ -328,7 +330,7 @@ export const ImpulseWishlist: React.FC = () => {
                                     <span className="text-light-text dark:text-dark-text">{item.name}</span>
                                 </div>
                                 <span className={item.status === 'approved' ? 'text-green-500' : 'text-red-500'}>
-                                    ${item.price.toLocaleString()}
+                                    {currencySymbol}{item.price.toLocaleString()}
                                 </span>
                             </div>
                         ))}
@@ -433,8 +435,8 @@ export const ImpulseWishlist: React.FC = () => {
                                                 type="button"
                                                 onClick={() => setNewItem({ ...newItem, timer_hours: hours })}
                                                 className={`py-2 px-4 rounded-lg text-sm font-medium transition-colors ${newItem.timer_hours === hours
-                                                        ? 'bg-lime-accent text-gray-900'
-                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                                    ? 'bg-lime-accent text-gray-900'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                                     }`}
                                             >
                                                 {hours}h
