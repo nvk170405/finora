@@ -7,12 +7,10 @@ import { TransactionTimeline } from '../components/TransactionTimeline';
 import { InsightsPage } from '../components/InsightsPage';
 import { SettingsPage } from '../components/SettingsPage';
 import { ProfilePage } from '../components/ProfilePage';
-import { TransfersPage } from '../components/TransfersPage';
 import { DepositPage } from '../components/DepositPage';
 import { WithdrawalPage } from '../components/WithdrawalPage';
 import { AdminWithdrawals } from '../components/AdminWithdrawals';
 import { SavingsGoalsPage } from '../components/SavingsGoalsPage';
-import { VirtualCardsPage } from '../components/VirtualCardsPage';
 import { FinanceScorePage } from '../components/FinanceScorePage';
 import { TransactionsPage } from '../components/TransactionsPage';
 import { RecurringDepositsPage } from '../components/RecurringDepositsPage';
@@ -31,8 +29,6 @@ export const DashboardPage: React.FC = () => {
         );
       case 'deposit':
         return <DepositPage />;
-      case 'transfers':
-        return <TransfersPage />;
       case 'withdrawal':
         return <WithdrawalPage />;
       case 'transactions':
@@ -41,8 +37,6 @@ export const DashboardPage: React.FC = () => {
         return <SavingsGoalsPage />;
       case 'recurring':
         return <RecurringDepositsPage />;
-      case 'cards':
-        return <VirtualCardsPage />;
       case 'score':
         return <FinanceScorePage />;
       case 'insights':

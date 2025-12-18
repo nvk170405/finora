@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet,
-  TrendingUp,
-  Send,
   BarChart3,
   Settings,
   ChevronLeft,
@@ -13,7 +11,6 @@ import {
   Plus,
   Building2,
   Target,
-  CreditCard,
   Activity,
   Clock
 } from 'lucide-react';
@@ -29,12 +26,10 @@ interface SidebarProps {
 const navigation = [
   { id: 'wallet', label: 'Wallet', icon: Wallet },
   { id: 'deposit', label: 'Deposit', icon: Plus },
-  { id: 'transfers', label: 'Transfers', icon: Send },
   { id: 'withdrawal', label: 'Withdraw', icon: Building2 },
   { id: 'transactions', label: 'Transactions', icon: BarChart3 },
   { id: 'recurring', label: 'Recurring', icon: Clock },
   { id: 'goals', label: 'Goals', icon: Target },
-  { id: 'cards', label: 'Cards', icon: CreditCard },
   { id: 'score', label: 'Finance Score', icon: Activity },
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
