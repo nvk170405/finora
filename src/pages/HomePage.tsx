@@ -20,8 +20,8 @@ import { BackgroundCircles } from '../components/ui/background-circles';
 const features = [
   {
     icon: Globe,
-    title: 'Multi-Currency Support',
-    description: 'Manage over 150+ currencies with real-time exchange rates and seamless conversions.'
+    title: 'Multi-Currency Wallets',
+    description: 'Track your money across 150+ currencies with accurate exchange rate insights.'
   },
   {
     icon: BarChart3,
@@ -35,8 +35,8 @@ const features = [
   },
   {
     icon: Zap,
-    title: 'Instant Transfers',
-    description: 'Send money globally in seconds with our lightning-fast transfer network.'
+    title: 'Achievements & Streaks',
+    description: 'Stay motivated with gamified savings goals, streaks, and unlockable badges.'
   },
   {
     icon: CreditCard,
@@ -45,8 +45,8 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: 'Investment Tracking',
-    description: 'Monitor your portfolio performance across multiple markets and currencies.'
+    title: 'Portfolio Tracking',
+    description: 'Monitor your total net worth across multiple currencies and accounts.'
   }
 ];
 

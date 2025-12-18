@@ -88,6 +88,24 @@ export const DepositPage: React.FC = () => {
                 }
             };
             sendEmail();
+
+            // Unlock achievements
+            const unlockAchievements = async () => {
+                const { achievementService } = await import('../services/achievementService');
+
+                // First deposit achievement
+                await achievementService.unlockAchievement('first_deposit');
+
+                // Time-based achievements
+                const hour = new Date().getHours();
+                if (hour < 8) {
+                    await achievementService.unlockAchievement('early_bird');
+                }
+                if (hour >= 22) {
+                    await achievementService.unlockAchievement('night_owl');
+                }
+            };
+            unlockAchievements();
         }
     }, [success, emailSent, user?.id, formData.amount, selectedWallet?.currency, refreshWallets]);
 

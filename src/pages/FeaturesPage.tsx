@@ -23,31 +23,31 @@ import { Header } from '../components/Header';
 
 const heroFeatures = [
     { icon: Shield, label: 'Bank-Level Security' },
-    { icon: Zap, label: 'Instant Transfers' },
+    { icon: Zap, label: 'Gamified Savings' },
     { icon: Globe, label: 'Global Coverage' },
     { icon: BarChart3, label: 'Smart Analytics' },
 ];
 
 const bankingFeatures = [
     {
-        icon: CreditCard,
-        title: 'Virtual & Physical Cards',
-        description: 'Get instant virtual cards for online purchases and premium physical cards delivered to your door.'
+        icon: Wallet,
+        title: 'Multi-Currency Wallets',
+        description: 'Track your money across 150+ currencies with real-time portfolio value in your preferred currency.'
     },
     {
         icon: Globe,
-        title: 'Multi-Currency Accounts',
-        description: 'Hold, send, and receive money in 150+ currencies with real-time exchange rates.'
+        title: 'Global Finance Tracking',
+        description: 'Perfect for digital nomads and freelancers managing income from around the world.'
     },
     {
-        icon: Zap,
-        title: 'Instant Transfers',
-        description: 'Send money anywhere in the world in seconds, not days. No hidden fees.'
+        icon: TrendingUp,
+        title: 'No-Spend Streaks',
+        description: 'Build healthy financial habits with streak tracking and milestone achievements.'
     },
     {
         icon: Lock,
         title: 'Advanced Security',
-        description: 'Biometric authentication, fraud detection, and instant card freezing at your fingertips.'
+        description: 'Bank-level encryption and secure authentication keep your financial data safe.'
     },
     {
         icon: BarChart3,
@@ -56,8 +56,8 @@ const bankingFeatures = [
     },
     {
         icon: PiggyBank,
-        title: 'Smart Savings',
-        description: 'Automated savings rules and round-ups that help you save without thinking about it.'
+        title: 'Savings Goals',
+        description: 'Set and track progress toward your financial goals with visual progress indicators.'
     },
 ];
 

@@ -66,6 +66,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
             const wallet = await walletService.createWallet({ currency });
             await refreshWallets();
+
+            // Check for multi_currency achievement (3+ wallets)
+            const { achievementService } = await import('../services/achievementService');
+            const updatedWallets = await walletService.getWallets();
+            if (updatedWallets.length >= 3) {
+                await achievementService.unlockAchievement('multi_currency');
+            }
+
             return wallet;
         } catch (err: any) {
             setError(err.message);

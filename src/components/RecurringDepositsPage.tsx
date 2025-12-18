@@ -107,6 +107,11 @@ export const RecurringDepositsPage: React.FC = () => {
             });
 
             if (error) throw error;
+
+            // Unlock recurring setup achievement
+            const { achievementService } = await import('../services/achievementService');
+            await achievementService.unlockAchievement('recurring_setup');
+
             setShowCreateModal(false);
             setNewDeposit({ walletId: '', amount: '', frequency: 'monthly', dayOfWeek: 1, dayOfMonth: 1 });
             fetchDeposits();
