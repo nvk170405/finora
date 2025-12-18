@@ -284,13 +284,13 @@ export const SettingsPage: React.FC = () => {
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { code: 'USD', flag: '🇺🇸', name: 'US Dollar' },
-                  { code: 'EUR', flag: '🇪🇺', name: 'Euro' },
-                  { code: 'GBP', flag: '🇬🇧', name: 'British Pound' },
-                  { code: 'INR', flag: '🇮🇳', name: 'Indian Rupee' },
-                  { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen' },
-                  { code: 'CAD', flag: '🇨🇦', name: 'Canadian Dollar' },
-                  { code: 'AUD', flag: '🇦🇺', name: 'Australian Dollar' },
+                  { code: 'USD', flag: '🇺🇸', name: 'US Dollar', symbol: '$' },
+                  { code: 'EUR', flag: '🇪🇺', name: 'Euro', symbol: '€' },
+                  { code: 'GBP', flag: '🇬🇧', name: 'British Pound', symbol: '£' },
+                  { code: 'INR', flag: '🇮🇳', name: 'Indian Rupee', symbol: '₹' },
+                  { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen', symbol: '¥' },
+                  { code: 'CAD', flag: '🇨🇦', name: 'Canadian Dollar', symbol: 'C$' },
+                  { code: 'AUD', flag: '🇦🇺', name: 'Australian Dollar', symbol: 'A$' },
                 ].map((currency) => (
                   <button
                     key={currency.code}
@@ -298,7 +298,7 @@ export const SettingsPage: React.FC = () => {
                       setDefaultCurrency(currency.code);
                       try {
                         await userService.upsertProfile({ default_currency: currency.code });
-                        showToast(`Default currency set to ${currency.code}`);
+                        showToast(`Default currency set to ${currency.symbol} (${currency.code})`);
                       } catch (err) {
                         console.error('Error saving currency:', err);
                       }
@@ -309,7 +309,8 @@ export const SettingsPage: React.FC = () => {
                       }`}
                   >
                     <span className="text-2xl mb-1 block">{currency.flag}</span>
-                    <span className="font-bold text-light-text dark:text-dark-text">{currency.code}</span>
+                    <span className="font-bold text-2xl text-light-text dark:text-dark-text">{currency.symbol}</span>
+                    <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary block">{currency.code}</span>
                   </button>
                 ))}
               </div>
