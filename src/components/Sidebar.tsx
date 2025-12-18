@@ -52,10 +52,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
 
   return (
     <motion.div
-      initial={{ width: 280 }}
-      animate={{ width: isCollapsed ? 80 : 280 }}
+      initial={{ width: 256 }}
+      animate={{ width: isCollapsed ? 80 : 256 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="bg-light-surface/80 dark:bg-dark-surface/80 backdrop-blur-glass border-r border-light-border dark:border-dark-border flex flex-col h-full transition-colors duration-300"
+      className="hidden lg:flex fixed left-0 top-0 bg-light-surface/80 dark:bg-dark-surface/80 backdrop-blur-glass border-r border-light-border dark:border-dark-border flex-col h-screen transition-colors duration-300 z-40"
     >
       {/* Header */}
       <div className="p-6 border-b border-light-border dark:border-dark-border flex items-center justify-between">
