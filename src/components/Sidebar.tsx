@@ -13,7 +13,8 @@ import {
   Building2,
   Target,
   Activity,
-  Clock
+  Clock,
+  Trophy
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -31,6 +32,7 @@ const navigation = [
   { id: 'transactions', label: 'Transactions', icon: BarChart3 },
   { id: 'recurring', label: 'Recurring', icon: Clock },
   { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'achievements', label: 'Achievements', icon: Trophy },
   { id: 'score', label: 'Finance Score', icon: Activity },
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },

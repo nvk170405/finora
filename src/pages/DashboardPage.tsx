@@ -14,6 +14,7 @@ import { SavingsGoalsPage } from '../components/SavingsGoalsPage';
 import { FinanceScorePage } from '../components/FinanceScorePage';
 import { TransactionsPage } from '../components/TransactionsPage';
 import { RecurringDepositsPage } from '../components/RecurringDepositsPage';
+import { AchievementsPage } from '../components/AchievementsPage';
 
 export const DashboardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('wallet');
@@ -37,6 +38,8 @@ export const DashboardPage: React.FC = () => {
         return <SavingsGoalsPage />;
       case 'recurring':
         return <RecurringDepositsPage />;
+      case 'achievements':
+        return <AchievementsPage />;
       case 'score':
         return <FinanceScorePage />;
       case 'insights':
