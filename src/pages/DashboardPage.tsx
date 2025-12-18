@@ -4,7 +4,6 @@ import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { WalletOverview } from '../components/WalletOverview';
 import { TransactionTimeline } from '../components/TransactionTimeline';
-import { ExchangeRates } from '../components/ExchangeRates';
 import { InsightsPage } from '../components/InsightsPage';
 import { SettingsPage } from '../components/SettingsPage';
 import { ProfilePage } from '../components/ProfilePage';
@@ -30,8 +29,6 @@ export const DashboardPage: React.FC = () => {
             <TransactionTimeline />
           </div>
         );
-      case 'exchange':
-        return <ExchangeRates />;
       case 'deposit':
         return <DepositPage />;
       case 'transfers':

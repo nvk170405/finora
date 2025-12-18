@@ -29,7 +29,6 @@ interface SidebarProps {
 const navigation = [
   { id: 'wallet', label: 'Wallet', icon: Wallet },
   { id: 'deposit', label: 'Deposit', icon: Plus },
-  { id: 'exchange', label: 'Exchange', icon: TrendingUp },
   { id: 'transfers', label: 'Transfers', icon: Send },
   { id: 'withdrawal', label: 'Withdraw', icon: Building2 },
   { id: 'transactions', label: 'Transactions', icon: BarChart3 },
