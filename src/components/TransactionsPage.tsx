@@ -1,11 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, FileText, Filter, Search, Calendar, ArrowUpDown, Plus, X } from 'lucide-react';
+import { Download, FileText, Filter, Search, Calendar, ArrowUpDown, Plus, X, Smile } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { exportService } from '../services/exportService';
 import { supabase } from '../config/supabase';
+
+const moodOptions = [
+    { id: 'happy', emoji: '😊', label: 'Happy' },
+    { id: 'necessary', emoji: '🤷', label: 'Necessary' },
+    { id: 'regret', emoji: '😔', label: 'Regret' },
+    { id: 'neutral', emoji: '😐', label: 'Neutral' },
+    { id: 'excited', emoji: '🎉', label: 'Excited' },
+    { id: 'guilty', emoji: '😬', label: 'Guilty' },
+];
 
 const categories = [
     'Food & Dining',
@@ -39,6 +48,7 @@ export const TransactionsPage: React.FC = () => {
         description: '',
         category: 'Other',
         walletId: '',
+        mood: '' as string,
     });
 
     // Filter and sort transactions
@@ -95,7 +105,7 @@ export const TransactionsPage: React.FC = () => {
             const amount = parseFloat(newTransaction.amount);
             const finalAmount = newTransaction.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
 
-            const { error } = await supabase.from('transactions').insert({
+            const { data: txData, error } = await supabase.from('transactions').insert({
                 user_id: user?.id,
                 wallet_id: newTransaction.walletId,
                 amount: finalAmount,
@@ -103,12 +113,21 @@ export const TransactionsPage: React.FC = () => {
                 description: newTransaction.description || `Manual ${newTransaction.type}`,
                 category: newTransaction.category,
                 currency: wallet?.currency || defaultCurrency,
-            });
+            }).select('id').single();
 
             if (error) throw error;
 
+            // Save mood if selected
+            if (newTransaction.mood && txData?.id) {
+                await supabase.from('transaction_moods').insert({
+                    transaction_id: txData.id,
+                    user_id: user?.id,
+                    mood: newTransaction.mood,
+                });
+            }
+
             setShowAddModal(false);
-            setNewTransaction({ type: 'expense', amount: '', description: '', category: 'Other', walletId: '' });
+            setNewTransaction({ type: 'expense', amount: '', description: '', category: 'Other', walletId: '', mood: '' });
             await refreshTransactions();
         } catch (err) {
             console.error('Error adding transaction:', err);
@@ -332,10 +351,10 @@ export const TransactionsPage: React.FC = () => {
                                                 key={type}
                                                 onClick={() => setNewTransaction({ ...newTransaction, type })}
                                                 className={`py-2 px-4 rounded-lg font-medium transition-colors ${newTransaction.type === type
-                                                        ? type === 'expense'
-                                                            ? 'bg-red-500 text-white'
-                                                            : 'bg-green-500 text-white'
-                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                                    ? type === 'expense'
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-green-500 text-white'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                                     }`}
                                             >
                                                 {type === 'expense' ? '↓ Expense' : '↑ Income'}
@@ -408,6 +427,38 @@ export const TransactionsPage: React.FC = () => {
                                             <option key={cat} value={cat}>{cat}</option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* Mood Selector */}
+                                <div>
+                                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        <Smile className="inline w-4 h-4 mr-1" />
+                                        How do you feel about this? (optional)
+                                    </label>
+                                    <div className="grid grid-cols-6 gap-2">
+                                        {moodOptions.map(mood => (
+                                            <button
+                                                key={mood.id}
+                                                type="button"
+                                                onClick={() => setNewTransaction({
+                                                    ...newTransaction,
+                                                    mood: newTransaction.mood === mood.id ? '' : mood.id
+                                                })}
+                                                className={`p-2 rounded-xl text-center transition-all ${newTransaction.mood === mood.id
+                                                        ? 'bg-lime-accent/30 border-2 border-lime-accent scale-105'
+                                                        : 'bg-gray-100 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300'
+                                                    }`}
+                                                title={mood.label}
+                                            >
+                                                <span className="text-xl">{mood.emoji}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {newTransaction.mood && (
+                                        <p className="text-xs text-lime-accent mt-1">
+                                            Feeling: {moodOptions.find(m => m.id === newTransaction.mood)?.label}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Submit */}
