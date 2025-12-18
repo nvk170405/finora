@@ -4,8 +4,9 @@ import { Plus, Calendar, Clock, Trash2, Play, Pause, DollarSign, RefreshCw, X } 
 import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useWalletContext } from '../contexts/WalletContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 
-interface RecurringDeposit {
+interface RecurringExpense {
     id: string;
     wallet_id: string;
     amount: number;
@@ -15,6 +16,7 @@ interface RecurringDeposit {
     day_of_month?: number;
     next_execution_date: string;
     is_active: boolean;
+    description?: string;
 }
 
 const frequencyLabels: Record<string, string> = {
@@ -167,9 +169,9 @@ export const RecurringDepositsPage: React.FC = () => {
                 className="flex items-center justify-between"
             >
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white font-editorial">Recurring Deposits</h2>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white font-editorial">Recurring Expenses</h2>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Set up automatic scheduled deposits
+                        Track recurring bills and subscriptions
                     </p>
                 </div>
                 <motion.button

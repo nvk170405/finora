@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet,
-  TrendingUp,
   BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
   User,
   Crown,
-  Plus,
-  Building2,
   Target,
   Activity,
   Clock,
@@ -29,9 +26,7 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { id: 'wallet', label: 'Wallet', icon: Wallet },
-  { id: 'deposit', label: 'Deposit', icon: Plus },
-  { id: 'withdrawal', label: 'Withdraw', icon: Building2 },
+  { id: 'wallet', label: 'Dashboard', icon: Wallet },
   { id: 'transactions', label: 'Transactions', icon: BarChart3 },
   { id: 'recurring', label: 'Recurring', icon: Clock },
   { id: 'goals', label: 'Goals', icon: Target },
@@ -43,7 +38,6 @@ const navigation = [
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'admin-withdrawals', label: 'Admin', icon: Settings, adminOnly: true },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
