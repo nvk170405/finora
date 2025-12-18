@@ -4,11 +4,14 @@ import { walletService, Wallet, transactionService, Transaction, CreateTransacti
 interface WalletContextType {
     wallets: Wallet[];
     transactions: Transaction[];
+    recurringExpenses: any[];
     loading: boolean;
     error: string | null;
     totalPortfolioValue: number;
     refreshWallets: () => Promise<void>;
     refreshTransactions: () => Promise<void>;
+    refreshRecurringExpenses: () => Promise<void>;
+    refreshAll: () => Promise<void>;
     createWallet: (currency: string) => Promise<Wallet | null>;
     deposit: (walletId: string, amount: number, description?: string) => Promise<boolean>;
     withdraw: (walletId: string, amount: number, recipient: string, description?: string) => Promise<boolean>;
@@ -20,6 +23,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [wallets, setWallets] = useState<Wallet[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
@@ -39,10 +43,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const refreshTransactions = useCallback(async () => {
         try {
-            const data = await transactionService.getRecentTransactions(10);
+            // Fetch more transactions for accurate portfolio calculations
+            const data = await transactionService.getRecentTransactions(100);
             setTransactions(data);
         } catch (err: any) {
             console.error('Failed to refresh transactions:', err);
+        }
+    }, []);
+
+    const refreshRecurringExpenses = useCallback(async () => {
+        try {
+            const { supabase } = await import('../config/supabase');
+            const { data } = await supabase
+                .from('recurring_expenses')
+                .select('*')
+                .eq('is_active', true);
+            setRecurringExpenses(data || []);
+        } catch (err: any) {
+            console.error('Failed to refresh recurring expenses:', err);
         }
     }, []);
 
@@ -50,13 +68,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setLoading(true);
         setError(null);
         try {
-            await Promise.all([refreshWallets(), refreshTransactions()]);
+            await Promise.all([refreshWallets(), refreshTransactions(), refreshRecurringExpenses()]);
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, [refreshWallets, refreshTransactions]);
+    }, [refreshWallets, refreshTransactions, refreshRecurringExpenses]);
+
+    const refreshAll = useCallback(async () => {
+        await Promise.all([refreshWallets(), refreshTransactions(), refreshRecurringExpenses()]);
+    }, [refreshWallets, refreshTransactions, refreshRecurringExpenses]);
 
     useEffect(() => {
         fetchAll();
@@ -153,11 +175,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             value={{
                 wallets,
                 transactions,
+                recurringExpenses,
                 loading,
                 error,
                 totalPortfolioValue,
                 refreshWallets,
                 refreshTransactions,
+                refreshRecurringExpenses,
+                refreshAll,
                 createWallet,
                 deposit,
                 withdraw,

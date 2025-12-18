@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, FileText, Filter, Search, Calendar, ArrowUpDown, Plus, X, Smile } from 'lucide-react';
+import { Download, FileText, Filter, Search, Calendar, ArrowUpDown, Plus, X, Smile, Trash2 } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
@@ -29,7 +29,7 @@ const categories = [
 ];
 
 export const TransactionsPage: React.FC = () => {
-    const { transactions, wallets, refreshTransactions } = useWalletContext();
+    const { transactions, wallets, refreshAll } = useWalletContext();
     const { user } = useAuth();
     const { currencySymbol, defaultCurrency } = usePreferences();
 
@@ -125,7 +125,7 @@ export const TransactionsPage: React.FC = () => {
 
             setShowAddModal(false);
             setNewTransaction({ type: 'withdrawal', amount: '', description: '', category: 'other', walletId: '', mood: '' });
-            await refreshTransactions();
+            await refreshAll();
         } catch (err) {
             console.error('Error adding transaction:', err);
         } finally {
@@ -278,7 +278,7 @@ export const TransactionsPage: React.FC = () => {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: index * 0.02 }}
-                                className="p-4 hover:bg-light-glass dark:hover:bg-dark-glass transition-colors"
+                                className="p-4 hover:bg-light-glass dark:hover:bg-dark-glass transition-colors group"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-4">
@@ -297,13 +297,42 @@ export const TransactionsPage: React.FC = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className={`font-bold ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {tx.amount >= 0 ? '+' : ''}{tx.currency} {tx.amount.toLocaleString()}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            {new Date(tx.created_at).toLocaleTimeString()}
-                                        </p>
+                                    <div className="flex items-center space-x-3">
+                                        <div className="text-right">
+                                            <p className={`font-bold ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {tx.amount >= 0 ? '+' : ''}{tx.currency} {tx.amount.toLocaleString()}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {new Date(tx.created_at).toLocaleTimeString()}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (!confirm('Delete this transaction? This cannot be undone.')) return;
+                                                try {
+                                                    const { error } = await supabase
+                                                        .from('transactions')
+                                                        .delete()
+                                                        .eq('id', tx.id);
+
+                                                    if (error) {
+                                                        console.error('Supabase delete error:', error);
+                                                        alert('Failed to delete transaction: ' + error.message);
+                                                        return;
+                                                    }
+
+                                                    await refreshAll();
+                                                } catch (err) {
+                                                    console.error('Error deleting transaction:', err);
+                                                    alert('Error deleting transaction');
+                                                }
+                                            }}
+                                            className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Delete transaction"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>

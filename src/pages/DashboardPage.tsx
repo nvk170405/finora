@@ -15,6 +15,7 @@ import { AchievementsPage } from '../components/AchievementsPage';
 import { ImpulseWishlist } from '../components/ImpulseWishlist';
 import { MoodJournal } from '../components/MoodJournal';
 import { ChallengesPage } from '../components/ChallengesPage';
+import { NetWorthPage } from '../components/NetWorthPage';
 
 export const DashboardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('wallet');
@@ -28,6 +29,8 @@ export const DashboardPage: React.FC = () => {
             <TransactionTimeline />
           </div>
         );
+      case 'networth':
+        return <NetWorthPage />;
       case 'transactions':
         return <TransactionsPage />;
       case 'goals':
@@ -56,13 +59,15 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-light-base via-light-base to-light-surface dark:from-dark-base dark:via-dark-base dark:to-dark-surface">
+    <div className="flex min-h-screen bg-gradient-to-br from-light-base via-light-base to-light-surface dark:from-dark-base dark:via-dark-base dark:to-dark-surface">
+      {/* Sidebar - flex child */}
       <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
 
-      <div className="lg:ml-64 min-h-screen">
+      {/* Main Content Area - takes remaining space */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <TopBar />
 
-        <main className="p-6 lg:p-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeSection}

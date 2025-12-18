@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Wallet,
   TrendingUp,
+  TrendingDown,
   BarChart3,
   Settings,
   ChevronLeft,
@@ -28,8 +29,9 @@ interface SidebarProps {
 
 const navigation = [
   { id: 'wallet', label: 'Dashboard', icon: Wallet },
+  { id: 'networth', label: 'Net Worth', icon: TrendingUp },
   { id: 'transactions', label: 'Transactions', icon: BarChart3 },
-  { id: 'recurring', label: 'Recurring', icon: Clock },
+  { id: 'recurring', label: 'Bills & Subs', icon: Clock },
   { id: 'goals', label: 'Goals', icon: Target },
   { id: 'impulse', label: 'Impulse Timer', icon: Timer },
   { id: 'mood', label: 'Mood Journal', icon: Smile },
@@ -55,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
       initial={{ width: 256 }}
       animate={{ width: isCollapsed ? 80 : 256 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="hidden lg:flex fixed left-0 top-0 bg-light-surface/80 dark:bg-dark-surface/80 backdrop-blur-glass border-r border-light-border dark:border-dark-border flex-col h-screen transition-colors duration-300 z-40"
+      className="hidden lg:flex flex-shrink-0 bg-light-surface/80 dark:bg-dark-surface/80 backdrop-blur-glass border-r border-light-border dark:border-dark-border flex-col h-screen sticky top-0 transition-colors duration-300 z-40"
     >
       {/* Header */}
       <div className="p-6 border-b border-light-border dark:border-dark-border flex items-center justify-between">
