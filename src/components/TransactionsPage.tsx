@@ -16,19 +16,16 @@ const moodOptions = [
     { id: 'guilty', emoji: '😬', label: 'Guilty' },
 ];
 
+// Database-compatible categories
 const categories = [
-    'Food & Dining',
-    'Shopping',
-    'Transportation',
-    'Entertainment',
-    'Bills & Utilities',
-    'Healthcare',
-    'Education',
-    'Travel',
-    'Salary',
-    'Investment',
-    'Gift',
-    'Other'
+    { value: 'food', label: 'Food & Dining' },
+    { value: 'shopping', label: 'Shopping' },
+    { value: 'travel', label: 'Travel' },
+    { value: 'entertainment', label: 'Entertainment' },
+    { value: 'utilities', label: 'Bills & Utilities' },
+    { value: 'business', label: 'Business' },
+    { value: 'income', label: 'Income/Salary' },
+    { value: 'other', label: 'Other' },
 ];
 
 export const TransactionsPage: React.FC = () => {
@@ -43,10 +40,10 @@ export const TransactionsPage: React.FC = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [saving, setSaving] = useState(false);
     const [newTransaction, setNewTransaction] = useState({
-        type: 'expense' as 'deposit' | 'expense',
+        type: 'withdrawal' as 'deposit' | 'withdrawal',
         amount: '',
         description: '',
-        category: 'Other',
+        category: 'other',
         walletId: '',
         mood: '' as string,
     });
@@ -103,7 +100,7 @@ export const TransactionsPage: React.FC = () => {
         try {
             const wallet = wallets.find(w => w.id === newTransaction.walletId);
             const amount = parseFloat(newTransaction.amount);
-            const finalAmount = newTransaction.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
+            const finalAmount = newTransaction.type === 'withdrawal' ? -Math.abs(amount) : Math.abs(amount);
 
             const { data: txData, error } = await supabase.from('transactions').insert({
                 user_id: user?.id,
@@ -127,7 +124,7 @@ export const TransactionsPage: React.FC = () => {
             }
 
             setShowAddModal(false);
-            setNewTransaction({ type: 'expense', amount: '', description: '', category: 'Other', walletId: '', mood: '' });
+            setNewTransaction({ type: 'withdrawal', amount: '', description: '', category: 'other', walletId: '', mood: '' });
             await refreshTransactions();
         } catch (err) {
             console.error('Error adding transaction:', err);
@@ -346,18 +343,18 @@ export const TransactionsPage: React.FC = () => {
                                         Type
                                     </label>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {(['expense', 'deposit'] as const).map(type => (
+                                        {(['withdrawal', 'deposit'] as const).map(type => (
                                             <button
                                                 key={type}
                                                 onClick={() => setNewTransaction({ ...newTransaction, type })}
                                                 className={`py-2 px-4 rounded-lg font-medium transition-colors ${newTransaction.type === type
-                                                    ? type === 'expense'
+                                                    ? type === 'withdrawal'
                                                         ? 'bg-red-500 text-white'
                                                         : 'bg-green-500 text-white'
                                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                                     }`}
                                             >
-                                                {type === 'expense' ? '↓ Expense' : '↑ Income'}
+                                                {type === 'withdrawal' ? '↓ Expense' : '↑ Income'}
                                             </button>
                                         ))}
                                     </div>
@@ -424,7 +421,7 @@ export const TransactionsPage: React.FC = () => {
                                         className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
                                     >
                                         {categories.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
+                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -445,8 +442,8 @@ export const TransactionsPage: React.FC = () => {
                                                     mood: newTransaction.mood === mood.id ? '' : mood.id
                                                 })}
                                                 className={`p-2 rounded-xl text-center transition-all ${newTransaction.mood === mood.id
-                                                        ? 'bg-lime-accent/30 border-2 border-lime-accent scale-105'
-                                                        : 'bg-gray-100 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300'
+                                                    ? 'bg-lime-accent/30 border-2 border-lime-accent scale-105'
+                                                    : 'bg-gray-100 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300'
                                                     }`}
                                                 title={mood.label}
                                             >
