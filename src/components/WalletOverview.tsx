@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  TrendingUp, Eye, EyeOff, Plus, Minus,
-  RefreshCw, PieChart, Calendar, ArrowUpRight, ArrowDownRight,
+  Eye, EyeOff, Plus, Minus,
+  RefreshCw, PieChart, ArrowUpRight, ArrowDownRight,
   X, Briefcase
 } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';

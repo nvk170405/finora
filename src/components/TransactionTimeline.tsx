@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownLeft, ShoppingBag, Coffee, Plane, Briefcase, Wallet, RefreshCw } from 'lucide-react';
 import { useWalletContext } from '../contexts/WalletContext';
-import { Transaction } from '../services';
 
 const categoryColors: Record<string, string> = {
   business: 'bg-blue-500/20 text-blue-400',
@@ -41,7 +40,7 @@ const formatRelativeTime = (dateString: string): string => {
 };
 
 export const TransactionTimeline: React.FC = () => {
-  const { transactions, loading, refreshTransactions } = useWalletContext();
+  const { transactions, loading, refreshAll } = useWalletContext();
 
   if (loading) {
     return (
@@ -74,7 +73,7 @@ export const TransactionTimeline: React.FC = () => {
         <motion.button
           whileHover={{ scale: 1.05, rotate: 180 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => refreshTransactions()}
+          onClick={() => refreshAll()}
           className="p-3 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-lime-accent/10 transition-colors duration-300"
         >
           <RefreshCw className="w-5 h-5 text-light-text dark:text-dark-text" />

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
   Wallet,
   TrendingUp,
-  TrendingDown,
   BarChart3,
   Settings,
   ChevronLeft,

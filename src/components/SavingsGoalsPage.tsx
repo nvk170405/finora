@@ -31,7 +31,7 @@ const currencySymbols: Record<string, string> = {
 
 export const SavingsGoalsPage: React.FC = () => {
     const { user } = useAuth();
-    const { wallets, refreshWallets } = useWalletContext();
+    const { wallets, refreshAll } = useWalletContext();
     const [goals, setGoals] = useState<SavingsGoal[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -176,7 +176,7 @@ export const SavingsGoalsPage: React.FC = () => {
             setContribution({ amount: '', walletId: '', note: '' });
             setSelectedGoal(null);
             fetchGoals();
-            refreshWallets();
+            refreshAll();
             setTimeout(() => setSuccess(null), 3000);
         } catch (err: any) {
             setError(err.message || 'Failed to contribute');

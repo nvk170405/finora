@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Lock, Crown, DollarSign, ShoppingBag, Plane, Coffee, Briefcase, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { useWalletContext } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { transactionService } from '../services';
+import { CountingNumber } from './ui/AnimatedNumber';
 import {
   LineChart,
   Line,
@@ -25,9 +27,10 @@ import {
 
 type Insight = {
   title: string;
-  value: string;
+  value: string | number;
   change: string;
   color: string;
+  isNumber?: boolean;
 };
 
 type ChartData = {
@@ -45,12 +48,25 @@ const fromUSDRates: Record<string, number> = {
 const CHART_COLORS = ['#CAFF40', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#10B981'];
 
 export const InsightsPage: React.FC = () => {
-  const { plan, isFeatureUnlocked } = useSubscription();
+  const { isFeatureUnlocked } = useSubscription();
   const { defaultCurrency, currencySymbol } = usePreferences();
+  const { recurringExpenses } = useWalletContext();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [basicInsights, setBasicInsights] = useState<Insight[]>([]);
   const [monthlySummary, setMonthlySummary] = useState({ income: 0, expenses: 0 });
+
+  // Calculate monthly bills from recurring expenses (consistent with dashboard)
+  const monthlyBills = React.useMemo(() => {
+    return recurringExpenses.reduce((sum, exp) => {
+      if (!exp.is_active) return sum;
+      if (exp.frequency === 'monthly') return sum + exp.amount;
+      if (exp.frequency === 'yearly') return sum + exp.amount / 12;
+      if (exp.frequency === 'weekly') return sum + exp.amount * 4.33;
+      if (exp.frequency === 'daily') return sum + exp.amount * 30;
+      return sum;
+    }, 0);
+  }, [recurringExpenses]);
   const [spendingData, setSpendingData] = useState<ChartData[]>([]);
   const [categoryData, setCategoryData] = useState<ChartData[]>([]);
   const [growthData, setGrowthData] = useState<ChartData[]>([]);
@@ -95,30 +111,35 @@ export const InsightsPage: React.FC = () => {
 
         const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
 
-        // Convert values to default currency
-        const rate = fromUSDRates[defaultCurrency] || 1;
-        const convertedExpenses = summary.expenses * rate;
-        const convertedAvg = avgTransaction * rate;
-        const convertedTopCat = topCategory ? topCategory[1] * rate : 0;
-
+        // Note: Transactions are already stored in user's currency, no conversion needed
         setBasicInsights([
           {
-            title: 'Monthly Spending',
-            value: `${currencySymbol}${convertedExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            change: transactions.length > 0 ? 'This month' : 'No data',
-            color: 'text-blue-400'
+            title: 'Total Monthly Spending',
+            value: Math.round(summary.expenses + monthlyBills),
+            change: transactions.length > 0 ? 'Transactions + Bills' : 'No data',
+            color: 'text-red-400',
+            isNumber: true
+          },
+          {
+            title: 'Monthly Bills',
+            value: Math.round(monthlyBills),
+            change: `${recurringExpenses.filter(e => e.is_active).length} active`,
+            color: 'text-orange-400',
+            isNumber: true
           },
           {
             title: 'Top Category',
             value: topCategory ? topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1) : 'N/A',
-            change: topCategory ? `${currencySymbol}${convertedTopCat.toLocaleString()}` : '',
-            color: 'text-lime-accent'
+            change: topCategory ? `${currencySymbol}${Math.round(topCategory[1]).toLocaleString()}` : '',
+            color: 'text-lime-accent',
+            isNumber: false
           },
           {
-            title: 'Avg. Transaction',
-            value: `${currencySymbol}${convertedAvg.toFixed(2)}`,
-            change: `${transactions.length} transactions`,
-            color: 'text-orange-400'
+            title: 'Monthly Income',
+            value: Math.round(summary.income),
+            change: 'This month',
+            color: 'text-green-400',
+            isNumber: true
           },
         ]);
 
@@ -149,12 +170,12 @@ export const InsightsPage: React.FC = () => {
           }
         });
 
-        // Convert to chart format
+        // Convert to chart format (no rate conversion - data already in user's currency)
         const spendingTrend = Object.entries(monthlyData).map(([month, data]) => ({
           name: month,
-          value: Math.round(data.expense * rate),
-          income: Math.round(data.income * rate),
-          expense: Math.round(data.expense * rate),
+          value: Math.round(data.expense),
+          income: Math.round(data.income),
+          expense: Math.round(data.expense),
         }));
         setSpendingData(spendingTrend);
 
@@ -164,7 +185,7 @@ export const InsightsPage: React.FC = () => {
           .slice(0, 6)
           .map(([name, value]) => ({
             name: name.charAt(0).toUpperCase() + name.slice(1),
-            value: Math.round(value * rate),
+            value: Math.round(value),
           }));
         setCategoryData(categories.length > 0 ? categories : [{ name: 'No Data', value: 0 }]);
 
@@ -187,7 +208,7 @@ export const InsightsPage: React.FC = () => {
         // Convert to chart format
         const growthChartData = Object.entries(monthlyData).map(([month]) => ({
           name: month,
-          value: Math.round((growthByMonth[month] || runningTotal) * rate),
+          value: Math.round(growthByMonth[month] || runningTotal),
         }));
         setGrowthData(growthChartData);
 
@@ -200,10 +221,8 @@ export const InsightsPage: React.FC = () => {
     loadInsights();
   }, [defaultCurrency, currencySymbol]);
 
-  const rate = fromUSDRates[defaultCurrency] || 1;
-  const convertedIncome = monthlySummary.income * rate;
-  const convertedExpenses = monthlySummary.expenses * rate;
-  const netFlow = (monthlySummary.income - monthlySummary.expenses) * rate;
+  // No rate conversion needed - transactions are already in user's currency
+  const netFlow = monthlySummary.income - monthlySummary.expenses;
 
   const premiumInsights: Insight[] = [
     {
@@ -215,21 +234,15 @@ export const InsightsPage: React.FC = () => {
       color: 'text-lime-accent'
     },
     {
-      title: 'Monthly Income',
-      value: `${currencySymbol}${convertedIncome.toLocaleString()}`,
-      change: 'This month',
-      color: 'text-green-400'
-    },
-    {
       title: 'Net Flow',
       value: `${currencySymbol}${netFlow.toLocaleString()}`,
       change: monthlySummary.income > monthlySummary.expenses ? 'Positive' : 'Negative',
-      color: 'text-blue-400'
+      color: netFlow >= 0 ? 'text-green-400' : 'text-red-400'
     },
     {
       title: 'Budget Status',
       value: monthlySummary.expenses < monthlySummary.income ? 'On Track' : 'Over Budget',
-      change: monthlySummary.expenses < monthlySummary.income ? '✓' : '⚠️',
+      change: monthlySummary.expenses < monthlySummary.income ? '✓ Surplus' : '⚠️ Deficit',
       color: monthlySummary.expenses < monthlySummary.income ? 'text-green-400' : 'text-red-400'
     },
   ];
@@ -307,7 +320,7 @@ export const InsightsPage: React.FC = () => {
       </motion.div>
 
       {/* Basic Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {basicInsights.map((insight, index) => (
           <motion.div
             key={insight.title}
@@ -317,7 +330,13 @@ export const InsightsPage: React.FC = () => {
             className="bg-light-surface/50 dark:bg-dark-surface/50 backdrop-blur-sm border border-light-border dark:border-dark-border rounded-xl p-6"
           >
             <h3 className="text-light-text-secondary dark:text-dark-text-secondary text-sm mb-2">{insight.title}</h3>
-            <p className={`text-2xl font-bold ${insight.color} mb-1`}>{insight.value}</p>
+            <p className={`text-2xl font-bold ${insight.color} mb-1`}>
+              {insight.isNumber ? (
+                <CountingNumber value={insight.value as number} prefix={currencySymbol} />
+              ) : (
+                insight.value
+              )}
+            </p>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{insight.change}</p>
           </motion.div>
         ))}
