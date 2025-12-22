@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Lock, Crown, DollarSign, ShoppingBag, Plane, Coffee, Briefcase, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { BarChart3, TrendingUp, Lock, Crown, DollarSign, ShoppingBag, Plane, Coffee, Briefcase, ArrowUpRight, ArrowDownRight, Sparkles, Lightbulb, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useWalletContext } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { transactionService } from '../services';
 import { CountingNumber } from './ui/AnimatedNumber';
+import { generateFinancialInsights, AIInsight, FinancialData } from '../services/aiInsightsService';
 import {
   LineChart,
   Line,
@@ -74,6 +75,10 @@ export const InsightsPage: React.FC = () => {
   const [exchangeCount, setExchangeCount] = useState(0);
 
   const hasAdvancedAnalytics = isFeatureUnlocked?.('advanced-analytics') ?? false;
+
+  // AI Insights state
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     const loadInsights = async () => {
@@ -220,6 +225,34 @@ export const InsightsPage: React.FC = () => {
     };
     loadInsights();
   }, [defaultCurrency, currencySymbol]);
+
+  // Manual AI insights generation function (triggered by button)
+  const handleGenerateAIInsights = async () => {
+    if (!hasAdvancedAnalytics) return;
+
+    setAiLoading(true);
+    try {
+      const financialData: FinancialData = {
+        totalIncome: monthlySummary.income,
+        totalExpenses: monthlySummary.expenses,
+        monthlyBills,
+        savingsRate: monthlySummary.income > 0
+          ? ((monthlySummary.income - monthlySummary.expenses) / monthlySummary.income * 100)
+          : 0,
+        topCategories: categoryData.slice(0, 3).map(c => ({ name: c.name, amount: c.value })),
+        currencySymbol
+      };
+
+      console.log('[AI Debug] Calling generateFinancialInsights with:', financialData);
+      const insights = await generateFinancialInsights(financialData);
+      console.log('[AI Debug] Got insights:', insights);
+      setAiInsights(insights);
+    } catch (err) {
+      console.error('Error loading AI insights:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // No rate conversion needed - transactions are already in user's currency
   const netFlow = monthlySummary.income - monthlySummary.expenses;
@@ -380,6 +413,112 @@ export const InsightsPage: React.FC = () => {
         </motion.div>
       )}
 
+      {/* AI Insights Section - Premium Only */}
+      {hasAdvancedAnalytics && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Sparkles className="w-6 h-6 text-lime-accent" />
+              <h3 className="text-xl font-bold text-light-text dark:text-dark-text">AI Insights</h3>
+              <span className="text-xs bg-lime-accent/20 text-lime-accent px-2 py-1 rounded-full">Powered by AI</span>
+            </div>
+            <button
+              onClick={handleGenerateAIInsights}
+              disabled={aiLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-lime-accent to-emerald-500 text-dark-background font-semibold rounded-lg hover:shadow-lg hover:shadow-lime-accent/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {aiLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-dark-background/30 border-t-dark-background rounded-full animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Generate AI Insights</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {aiLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-light-surface/50 dark:bg-dark-surface/50 rounded-xl p-5 animate-pulse">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-light-glass dark:bg-dark-glass rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-light-glass dark:bg-dark-glass rounded w-1/3" />
+                      <div className="h-3 bg-light-glass dark:bg-dark-glass rounded w-full" />
+                      <div className="h-3 bg-light-glass dark:bg-dark-glass rounded w-2/3" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : aiInsights.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {aiInsights.map((insight, index) => {
+                const getIcon = () => {
+                  switch (insight.type) {
+                    case 'success': return <CheckCircle className="w-5 h-5 text-green-400" />;
+                    case 'warning': return <AlertTriangle className="w-5 h-5 text-orange-400" />;
+                    case 'tip': return <Lightbulb className="w-5 h-5 text-yellow-400" />;
+                    default: return <Info className="w-5 h-5 text-blue-400" />;
+                  }
+                };
+                const getBg = () => {
+                  switch (insight.type) {
+                    case 'success': return 'from-green-500/10 to-green-500/5 border-green-500/20';
+                    case 'warning': return 'from-orange-500/10 to-orange-500/5 border-orange-500/20';
+                    case 'tip': return 'from-yellow-500/10 to-yellow-500/5 border-yellow-500/20';
+                    default: return 'from-blue-500/10 to-blue-500/5 border-blue-500/20';
+                  }
+                };
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 * index }}
+                    className={`bg-gradient-to-br ${getBg()} border rounded-xl p-5`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="p-2 bg-light-glass dark:bg-dark-glass rounded-lg">
+                        {getIcon()}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-light-text dark:text-dark-text mb-1">
+                          {insight.title}
+                        </h4>
+                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                          {insight.content}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-light-surface/30 dark:bg-dark-surface/30 rounded-xl p-8 text-center border border-dashed border-light-glass dark:border-dark-glass">
+              <Sparkles className="w-12 h-12 text-lime-accent/50 mx-auto mb-4" />
+              <h4 className="text-lg font-semibold text-light-text dark:text-dark-text mb-2">
+                Get Personalized Financial Insights
+              </h4>
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
+                Click the button above to generate AI-powered insights based on your financial data.
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Charts Section - Premium Only */}
       {hasAdvancedAnalytics ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -477,20 +616,24 @@ export const InsightsPage: React.FC = () => {
               <DollarSign className="w-6 h-6 text-lime-accent" />
               <h3 className="text-xl font-bold text-light-text dark:text-dark-text">Spending by Category</h3>
             </div>
-            <div className="h-64 flex items-center justify-center">
+            <div className="h-80 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
+                    innerRadius={50}
+                    outerRadius={80}
                     paddingAngle={3}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={true}
+                    label={({ name, percent }) => {
+                      const displayName = name.length > 10 ? name.slice(0, 10) + '...' : name;
+                      return `${displayName} ${((percent ?? 0) * 100).toFixed(0)}%`;
+                    }}
                   >
-                    {categoryData.map((entry, index) => (
+                    {categoryData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>

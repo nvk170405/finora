@@ -7,8 +7,18 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
-     define: {
+  define: {
     'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL),
     'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY),
-     }
+  },
+  server: {
+    proxy: {
+      '/api/huggingface': {
+        target: 'https://router.huggingface.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/huggingface/, ''),
+        secure: true,
+      }
+    }
+  }
 });
