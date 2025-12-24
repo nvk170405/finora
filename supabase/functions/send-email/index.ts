@@ -9,6 +9,91 @@ const corsHeaders = {
 
 // Email templates
 const templates = {
+    // Transaction notification
+    transaction: (name: string, type: string, amount: string, currency: string, category: string) => ({
+        subject: `📊 Transaction Recorded - ${type === 'deposit' ? '+' : '-'}${currency}${amount}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">Transaction Recorded 📊</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">A new ${type} has been recorded in your account:</p>
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                    <p style="margin: 8px 0;"><strong style="color: #a3e635;">Amount:</strong> <span style="color: ${type === 'deposit' ? '#22c55e' : '#ef4444'};">${type === 'deposit' ? '+' : '-'}${currency}${amount}</span></p>
+                    <p style="margin: 8px 0;"><strong style="color: #a3e635;">Category:</strong> ${category}</p>
+                    <p style="margin: 8px 0;"><strong style="color: #a3e635;">Type:</strong> ${type}</p>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX.</p>
+            </div>
+        `
+    }),
+
+    // Savings goal reached
+    goalReached: (name: string, goalName: string, targetAmount: string, currency: string) => ({
+        subject: `🎯 Goal Achieved! - ${goalName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">🎉 Congratulations!</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">You've reached your savings goal!</p>
+                <div style="background: linear-gradient(135deg, #a3e635 0%, #22c55e 100%); padding: 25px; border-radius: 12px; margin: 20px 0; text-align: center;">
+                    <h3 style="color: #1a1a2e; margin: 0;">${goalName}</h3>
+                    <p style="color: #1a1a2e; font-size: 28px; font-weight: bold; margin: 10px 0;">${currency}${targetAmount}</p>
+                    <p style="color: #1a1a2e;">Goal Complete! 🎯</p>
+                </div>
+                <p style="color: #a0a0a0;">Keep up the great work with your financial goals!</p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX.</p>
+            </div>
+        `
+    }),
+
+    // Bill due reminder
+    billDue: (name: string, billName: string, amount: string, currency: string, dueDate: string) => ({
+        subject: `⏰ Bill Due Reminder - ${billName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">📅 Bill Due Reminder</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">You have a bill coming up:</p>
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+                    <p style="margin: 8px 0;"><strong style="color: #f59e0b;">Bill:</strong> ${billName}</p>
+                    <p style="margin: 8px 0;"><strong style="color: #f59e0b;">Amount:</strong> ${currency}${amount}</p>
+                    <p style="margin: 8px 0;"><strong style="color: #f59e0b;">Due Date:</strong> ${dueDate}</p>
+                </div>
+                <p style="color: #a0a0a0;">Don't forget to pay on time to avoid late fees!</p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX.</p>
+            </div>
+        `
+    }),
+
+    // Welcome email
+    welcome: (name: string) => ({
+        subject: `🎉 Welcome to FinoraX!`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">Welcome aboard! 🚀</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">Thank you for joining FinoraX! We're excited to help you take control of your finances.</p>
+                <div style="background: linear-gradient(135deg, #a3e635 0%, #22c55e 100%); padding: 25px; border-radius: 12px; margin: 20px 0; text-align: center;">
+                    <h3 style="color: #1a1a2e; margin: 0;">Get Started</h3>
+                    <p style="color: #1a1a2e;">Track expenses • Set goals • Build wealth</p>
+                </div>
+                <p style="color: #a0a0a0;">Here's what you can do:</p>
+                <ul style="color: #a0a0a0;">
+                    <li>📊 Track your daily transactions</li>
+                    <li>🎯 Set and achieve savings goals</li>
+                    <li>📅 Manage recurring bills</li>
+                    <li>📈 Get insights on your spending</li>
+                </ul>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX.</p>
+            </div>
+        `
+    }),
+
+    // Legacy templates
     deposit: (name: string, amount: string, currency: string) => ({
         subject: `💰 Deposit Confirmed - ${currency} ${amount}`,
         html: `
@@ -147,6 +232,18 @@ serve(async (req: Request) => {
 
         let emailContent
         switch (type) {
+            case 'transaction':
+                emailContent = templates.transaction(name, data.transactionType, data.amount, data.currency, data.category || 'Other')
+                break
+            case 'goal_reached':
+                emailContent = templates.goalReached(name, data.goalName, data.targetAmount, data.currency)
+                break
+            case 'bill_due':
+                emailContent = templates.billDue(name, data.billName, data.amount, data.currency, data.dueDate)
+                break
+            case 'welcome':
+                emailContent = templates.welcome(name)
+                break
             case 'deposit':
                 emailContent = templates.deposit(name, data.amount, data.currency)
                 break

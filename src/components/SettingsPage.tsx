@@ -6,8 +6,7 @@ import {
   Shield,
   Globe,
   Download,
-  Smartphone,
-  Monitor,
+  Sparkles,
   Crown,
   Loader2,
   X,
@@ -25,12 +24,12 @@ import { supabase } from '../config/supabase';
 export const SettingsPage: React.FC = () => {
   const { plan, billingCycle } = useSubscription();
   const { user } = useAuth();
-  const { defaultCurrency, setDefaultCurrency } = usePreferences();
+  const { defaultCurrency, setDefaultCurrency, displayName: contextDisplayName, setDisplayName: setContextDisplayName } = usePreferences();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [displayName, setDisplayName] = useState('');
+  const [localDisplayName, setLocalDisplayName] = useState('');
 
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -67,7 +66,7 @@ export const SettingsPage: React.FC = () => {
           setSettings(settingsData);
         }
 
-        setDisplayName(profileData?.display_name || user?.email?.split('@')[0] || '');
+        setLocalDisplayName(profileData?.display_name || user?.email?.split('@')[0] || '');
       } catch (err) {
         console.error('Error loading settings:', err);
         setSettings({
@@ -108,7 +107,8 @@ export const SettingsPage: React.FC = () => {
   const handleDisplayNameSave = async () => {
     setSaving(true);
     try {
-      await userService.upsertProfile({ display_name: displayName });
+      // Use context setDisplayName which updates both local state and database
+      await setContextDisplayName(localDisplayName);
       showToast('Display name updated!');
     } catch (err) {
       console.error('Error saving display name:', err);
@@ -254,8 +254,8 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex space-x-2">
                   <input
                     type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    value={localDisplayName}
+                    onChange={(e) => setLocalDisplayName(e.target.value)}
                     placeholder="Enter your display name"
                     className="flex-1 px-4 py-3 bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:border-lime-accent/50"
                   />
@@ -329,41 +329,13 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-light-text dark:text-dark-text font-medium">Email notifications</span>
-                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Receive updates via email</p>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Receive transaction updates and alerts via email</p>
                 </div>
                 <button
                   onClick={() => handleNotificationToggle('notifications_email')}
                   className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${settings?.notifications_email ? 'bg-lime-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
                 >
                   <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings?.notifications_email ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              {/* Push Toggle */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-light-text dark:text-dark-text font-medium">Push notifications</span>
-                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Browser push notifications</p>
-                </div>
-                <button
-                  onClick={() => handleNotificationToggle('notifications_push')}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${settings?.notifications_push ? 'bg-lime-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
-                >
-                  <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings?.notifications_push ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              {/* SMS Toggle */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-light-text dark:text-dark-text font-medium">SMS notifications</span>
-                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Text message alerts</p>
-                </div>
-                <button
-                  onClick={() => handleNotificationToggle('notifications_sms')}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${settings?.notifications_sms ? 'bg-lime-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
-                >
-                  <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings?.notifications_sms ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
             </div>
@@ -500,15 +472,14 @@ export const SettingsPage: React.FC = () => {
               <Download className="w-6 h-6 text-lime-accent" />
               <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Download Apps</h3>
             </div>
-            <div className="space-y-3">
-              <button onClick={() => showToast('Mobile app coming soon!')} className="w-full flex items-center space-x-3 p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10">
-                <Smartphone className="w-5 h-5 text-light-text dark:text-dark-text" />
-                <span className="text-light-text dark:text-dark-text">Mobile App</span>
-              </button>
-              <button onClick={() => showToast('Desktop app coming soon!')} className="w-full flex items-center space-x-3 p-3 bg-light-glass dark:bg-dark-glass rounded-lg hover:bg-lime-accent/10">
-                <Monitor className="w-5 h-5 text-light-text dark:text-dark-text" />
-                <span className="text-light-text dark:text-dark-text">Desktop App</span>
-              </button>
+            <div className="text-center py-6">
+              <div className="w-12 h-12 mx-auto mb-3 bg-lime-accent/20 rounded-full flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-lime-accent" />
+              </div>
+              <p className="text-light-text dark:text-dark-text font-medium mb-2">Coming Soon!</p>
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                Native apps for Android, iOS, Windows & Mac are in development.
+              </p>
             </div>
           </div>
 

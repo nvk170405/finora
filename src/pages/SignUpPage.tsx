@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TrendingUp, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { emailNotificationService } from '../services/emailNotificationService';
 import { BsGoogle, BsApple, BsMeta } from "react-icons/bs";
 
 export const SignUpPage: React.FC = () => {
@@ -25,6 +26,10 @@ export const SignUpPage: React.FC = () => {
       if (error) throw error;
       // Show verification message instead of redirecting
       setVerificationSent(true);
+      // Send welcome email (async, don't block)
+      emailNotificationService.notifyWelcome().catch(err =>
+        console.log('Welcome email skipped:', err)
+      );
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {

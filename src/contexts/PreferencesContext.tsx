@@ -5,6 +5,8 @@ import { userService } from '../services';
 interface PreferencesContextType {
     defaultCurrency: string;
     setDefaultCurrency: (currency: string) => void;
+    displayName: string;
+    setDisplayName: (name: string) => void;
     loading: boolean;
     currencySymbol: string;
     currencyFlag: string;
@@ -35,6 +37,7 @@ const PreferencesContext = createContext<PreferencesContextType | undefined>(und
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [defaultCurrency, setDefaultCurrencyState] = useState('USD');
+    const [displayName, setDisplayNameState] = useState('');
     const [loading, setLoading] = useState(true);
 
     // Load user preferences on mount
@@ -57,8 +60,14 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     setDefaultCurrencyState(profile.default_currency);
                     localStorage.setItem('finora_default_currency', profile.default_currency);
                 }
+                // Load display name from profile
+                const name = profile?.display_name || user?.email?.split('@')[0] || '';
+                setDisplayNameState(name);
+                localStorage.setItem('finora_display_name', name);
             } catch (err) {
                 console.error('Error loading preferences:', err);
+                // Fallback to email
+                setDisplayNameState(user?.email?.split('@')[0] || '');
             } finally {
                 setLoading(false);
             }
@@ -79,6 +88,18 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }, []);
 
+    const setDisplayName = useCallback(async (name: string) => {
+        setDisplayNameState(name);
+        localStorage.setItem('finora_display_name', name);
+
+        // Also save to database
+        try {
+            await userService.upsertProfile({ display_name: name });
+        } catch (err) {
+            console.error('Error saving display name:', err);
+        }
+    }, []);
+
     const currencySymbol = currencySymbols[defaultCurrency] || '$';
     const currencyFlag = currencyFlags[defaultCurrency] || '💰';
 
@@ -86,6 +107,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         <PreferencesContext.Provider value={{
             defaultCurrency,
             setDefaultCurrency,
+            displayName,
+            setDisplayName,
             loading,
             currencySymbol,
             currencyFlag,

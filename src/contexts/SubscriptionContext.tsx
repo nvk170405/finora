@@ -140,18 +140,46 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const isTrialExpired = plan === 'trial' && trialDaysRemaining !== null && trialDaysRemaining <= 0;
 
   const isFeatureUnlocked = (feature: string): boolean => {
-    // Trial users get premium features
-    if (plan === 'trial' && !isTrialExpired) return true;
-    if (plan === 'premium') return true;
-
-    const basicFeatures = [
-      'basic-analytics',
+    // Define feature tiers
+    const freeFeatures = [
       'dashboard',
+      'transactions',
+      'profile',
+      'settings',
+      'basic-analytics',
       'voice-recording',
       'themes'
     ];
 
-    return basicFeatures.includes(feature);
+    const basicFeatures = [
+      ...freeFeatures,
+      'goals',
+      'recurring-expenses',
+      'achievements'
+    ];
+
+    // Premium features (everything not in basic)
+    const premiumFeatures = [
+      ...basicFeatures,
+      'networth',
+      'advanced-analytics',
+      'impulse-timer',
+      'mood-journal',
+      'challenges',
+      'finance-score'
+    ];
+
+    // Trial and Premium users get all features
+    if (plan === 'trial' && !isTrialExpired) return true;
+    if (plan === 'premium') return true;
+
+    // Basic users get basic + free features
+    if (plan === 'basic') {
+      return basicFeatures.includes(feature);
+    }
+
+    // Free/no plan users get only free features
+    return freeFeatures.includes(feature);
   };
 
   // Trial or paid subscription counts as active (unless expired)

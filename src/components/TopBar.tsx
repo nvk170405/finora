@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useWalletContext } from '../contexts/WalletContext';
 import { supabase } from '../config/supabase';
+import { usePreferences } from '../contexts/PreferencesContext';
 
 interface TopBarProps {
   onNavigate?: (section: string) => void;
@@ -28,6 +29,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
   const { user, logout } = useAuth();
   const { plan, trialDaysRemaining, isTrialExpired } = useSubscription();
   const { transactions } = useWalletContext();
+  const { currencySymbol, displayName } = usePreferences();
 
   // Load the user's "marked read at" timestamp from database
   useEffect(() => {
@@ -68,7 +70,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
         recentNotifications.push({
           id: tx.id,
           title: isDeposit ? 'Deposit received' : 'Transaction completed',
-          message: `${isDeposit ? '+' : '-'}$${Math.abs(tx.amount).toLocaleString()} ${tx.description || tx.category || ''}`,
+          message: `${isDeposit ? '+' : '-'}${currencySymbol}${Math.abs(tx.amount).toLocaleString()} ${tx.description || tx.category || ''}`,
           time: txDate.toLocaleString(),
           unread: !isRead,
           type: 'transaction',
@@ -174,7 +176,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
       <div className="flex items-center space-x-6">
         <div>
           <h1 className="text-lg font-bold text-light-text dark:text-dark-text">
-            Welcome back, {user?.email?.split('@')[0] || 'User'}!
+            Welcome back, {displayName || user?.email?.split('@')[0] || 'User'}!
           </h1>
           <div className="flex items-center space-x-3">
             {plan === 'trial' && trialDaysRemaining !== null && !isTrialExpired ? (
@@ -331,10 +333,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleLogout}
-          className="p-2 bg-light-glass dark:bg-dark-glass rounded-full hover:bg-red-500/10 text-light-text dark:text-dark-text hover:text-red-400 transition-colors"
+          className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all duration-300"
           title="Logout"
         >
-          <LogOut size={20} />
+          <LogOut className="w-5 h-5" />
         </motion.button>
 
         {/* User Avatar with Menu */}

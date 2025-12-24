@@ -5,6 +5,7 @@ import { useWalletContext } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { exportService } from '../services/exportService';
+import { emailNotificationService } from '../services/emailNotificationService';
 import { supabase } from '../config/supabase';
 
 const moodOptions = [
@@ -122,6 +123,15 @@ export const TransactionsPage: React.FC = () => {
                     mood: newTransaction.mood,
                 });
             }
+
+            // Send email notification (async, don't block)
+            const txType = newTransaction.type === 'deposit' ? 'income' : 'expense';
+            emailNotificationService.notifyTransaction(
+                txType,
+                Math.abs(parseFloat(newTransaction.amount)),
+                wallet?.currency || defaultCurrency,
+                newTransaction.category || 'other'
+            ).catch(err => console.log('Email notification skipped:', err));
 
             setShowAddModal(false);
             setNewTransaction({ type: 'withdrawal', amount: '', description: '', category: 'other', walletId: '', mood: '' });

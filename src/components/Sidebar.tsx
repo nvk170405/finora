@@ -15,10 +15,12 @@ import {
   Trophy,
   Timer,
   Smile,
-  Zap
+  Zap,
+  Lock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { Link } from 'react-router-dom';
 
 interface SidebarProps {
@@ -27,28 +29,29 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { id: 'wallet', label: 'Dashboard', icon: Wallet },
-  { id: 'networth', label: 'Net Worth', icon: TrendingUp },
-  { id: 'transactions', label: 'Transactions', icon: BarChart3 },
-  { id: 'recurring', label: 'Bills & Subs', icon: Clock },
-  { id: 'goals', label: 'Goals', icon: Target },
-  { id: 'impulse', label: 'Impulse Timer', icon: Timer },
-  { id: 'mood', label: 'Mood Journal', icon: Smile },
-  { id: 'challenges', label: 'Challenges', icon: Zap },
-  { id: 'achievements', label: 'Achievements', icon: Trophy },
-  { id: 'score', label: 'Finance Score', icon: Activity },
-  { id: 'insights', label: 'Insights', icon: BarChart3 },
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'wallet', label: 'Dashboard', icon: Wallet, tier: 'free' },
+  { id: 'networth', label: 'Net Worth', icon: TrendingUp, tier: 'premium' },
+  { id: 'transactions', label: 'Transactions', icon: BarChart3, tier: 'free' },
+  { id: 'recurring', label: 'Bills & Subs', icon: Clock, tier: 'basic' },
+  { id: 'goals', label: 'Goals', icon: Target, tier: 'basic' },
+  { id: 'impulse', label: 'Impulse Timer', icon: Timer, tier: 'premium' },
+  { id: 'mood', label: 'Mood Journal', icon: Smile, tier: 'premium' },
+  { id: 'challenges', label: 'Challenges', icon: Zap, tier: 'premium' },
+  { id: 'achievements', label: 'Achievements', icon: Trophy, tier: 'basic' },
+  { id: 'score', label: 'Finance Score', icon: Activity, tier: 'premium' },
+  { id: 'insights', label: 'Insights', icon: BarChart3, tier: 'premium' },
+  { id: 'profile', label: 'Profile', icon: User, tier: 'free' },
+  { id: 'settings', label: 'Settings', icon: Settings, tier: 'free' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user } = useAuth(); // ✅ Corrected from currentUser
-  const { plan } = useSubscription();
+  const { user } = useAuth();
+  const { plan, isFeatureUnlocked } = useSubscription();
+  const { displayName } = usePreferences();
 
-  const initials = user?.email?.charAt(0).toUpperCase() || 'U';
-  const username = user?.email?.split('@')[0] || 'User';
+  const username = displayName || user?.email?.split('@')[0] || 'User';
+  const initials = username.charAt(0).toUpperCase();
   const planLabel = plan ? `${plan.charAt(0).toUpperCase() + plan.slice(1)} Member` : 'Free Trial';
 
   return (
@@ -97,13 +100,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = activeSection === item.id;
+          // Map navigation id to feature id
+          const featureMap: Record<string, string> = {
+            'wallet': 'dashboard',
+            'networth': 'networth',
+            'transactions': 'transactions',
+            'recurring': 'recurring-expenses',
+            'goals': 'goals',
+            'impulse': 'impulse-timer',
+            'mood': 'mood-journal',
+            'challenges': 'challenges',
+            'achievements': 'achievements',
+            'score': 'finance-score',
+            'insights': 'advanced-analytics',
+            'profile': 'profile',
+            'settings': 'settings'
+          };
+          const featureId = featureMap[item.id] || item.id;
+          const isLocked = !isFeatureUnlocked(featureId);
+
           return (
             <motion.button
               key={item.id}
               onClick={() => onSectionChange(item.id)}
               className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all relative group ${isActive
                 ? 'bg-lime-accent/10 text-lime-accent'
-                : 'text-light-text font-montserrat dark:text-dark-text hover:bg-light-glass dark:hover:bg-dark-glass hover:text-lime-accent'
+                : isLocked
+                  ? 'text-light-text-secondary dark:text-dark-text-secondary opacity-60 hover:opacity-80'
+                  : 'text-light-text font-montserrat dark:text-dark-text hover:bg-light-glass dark:hover:bg-dark-glass hover:text-lime-accent'
                 }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -126,10 +150,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange
                   initial={{ opacity: 1 }}
                   animate={{ opacity: isCollapsed ? 0 : 1 }}
                   transition={{ duration: 0.2 }}
-                  className="font-medium font-montserrat font-editorial"
+                  className="font-medium font-montserrat font-editorial flex-1 text-left"
                 >
                   {item.label}
                 </motion.span>
+              )}
+
+              {/* Show lock/crown for premium features */}
+              {!isCollapsed && isLocked && (
+                <Lock className="w-4 h-4 text-orange-400" />
+              )}
+              {!isCollapsed && !isLocked && item.tier === 'premium' && (
+                <Crown className="w-4 h-4 text-lime-accent" />
               )}
 
               {isActive && (

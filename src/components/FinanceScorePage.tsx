@@ -7,6 +7,7 @@ import {
 import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useWalletContext } from '../contexts/WalletContext';
+import { PremiumGate } from './PremiumGate';
 
 interface ScoreBreakdown {
     savingsRate: number;
@@ -231,187 +232,194 @@ export const FinanceScorePage: React.FC = () => {
     const scoreLabel = getScoreLabel(overallScore);
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-            >
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white font-editorial">Finance Health Score</h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    Track and improve your financial wellness
-                </p>
-            </motion.div>
+        <PremiumGate
+            feature="finance-score"
+            requiredPlan="premium"
+            title="Finance Score"
+            description="Get a comprehensive analysis of your financial health with personalized tips. Upgrade to premium to unlock."
+        >
+            <div className="space-y-6">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white font-editorial">Finance Health Score</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        Track and improve your financial wellness
+                    </p>
+                </motion.div>
 
-            {/* Main Score Card */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
-                className="bg-gradient-to-br from-light-surface/80 to-light-surface/40 dark:from-dark-surface/80 dark:to-dark-surface/40 border border-light-border dark:border-dark-border rounded-2xl p-8"
-            >
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                    {/* Score Gauge */}
-                    <div className="relative w-48 h-48">
-                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                            {/* Background circle */}
-                            <circle
-                                cx="50"
-                                cy="50"
-                                r="42"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="8"
-                                className="text-light-border dark:text-dark-border"
-                            />
-                            {/* Progress circle */}
-                            <motion.circle
-                                cx="50"
-                                cy="50"
-                                r="42"
-                                fill="none"
-                                stroke={scoreColor}
-                                strokeWidth="8"
-                                strokeLinecap="round"
-                                strokeDasharray={`${2 * Math.PI * 42}`}
-                                initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
-                                animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - animatedScore / 100) }}
-                                transition={{ duration: 1.5, ease: "easeOut" }}
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <motion.span
-                                className="text-5xl font-bold"
-                                style={{ color: scoreColor }}
-                            >
-                                {animatedScore}
-                            </motion.span>
-                            <span className="text-gray-600 dark:text-gray-400 text-sm">out of 100</span>
-                        </div>
-                    </div>
-
-                    {/* Score Info */}
-                    <div className="flex-1 text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
-                            <Star className="w-6 h-6" style={{ color: scoreColor }} />
-                            <span className="text-2xl font-bold" style={{ color: scoreColor }}>{scoreLabel}</span>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 max-w-md">
-                            Your finance score is calculated based on your savings habits, spending patterns,
-                            goal progress, diversification, and consistency.
-                        </p>
-                    </div>
-                </div>
-            </motion.div>
-
-            {/* Score Breakdown */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
-            >
-                {[
-                    { label: 'Savings Rate', value: breakdown.savingsRate, icon: PiggyBank, weight: '30%' },
-                    { label: 'Budget', value: breakdown.budgetAdherence, icon: Wallet, weight: '25%' },
-                    { label: 'Goals', value: breakdown.goalProgress, icon: Target, weight: '20%' },
-                    { label: 'Diversity', value: breakdown.diversification, icon: Shield, weight: '15%' },
-                    { label: 'Consistency', value: breakdown.consistency, icon: Zap, weight: '10%' },
-                ].map((item, index) => (
-                    <motion.div
-                        key={item.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                        className="bg-light-surface/50 dark:bg-dark-surface/50 border border-light-border dark:border-dark-border rounded-xl p-4"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <item.icon className="w-5 h-5 text-lime-accent" />
-                            <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{item.weight}</span>
-                        </div>
-                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-1">{item.label}</p>
-                        <div className="flex items-center space-x-2">
-                            <span className="text-xl font-bold text-light-text dark:text-dark-text">{item.value}</span>
-                            <div className="flex-1 h-2 bg-light-border dark:bg-dark-border rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full rounded-full"
-                                    style={{ backgroundColor: getScoreColor(item.value) }}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${item.value}%` }}
-                                    transition={{ duration: 1, delay: 0.3 + index * 0.1 }}
+                {/* Main Score Card */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-gradient-to-br from-light-surface/80 to-light-surface/40 dark:from-dark-surface/80 dark:to-dark-surface/40 border border-light-border dark:border-dark-border rounded-2xl p-8"
+                >
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                        {/* Score Gauge */}
+                        <div className="relative w-48 h-48">
+                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                {/* Background circle */}
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r="42"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="8"
+                                    className="text-light-border dark:text-dark-border"
                                 />
+                                {/* Progress circle */}
+                                <motion.circle
+                                    cx="50"
+                                    cy="50"
+                                    r="42"
+                                    fill="none"
+                                    stroke={scoreColor}
+                                    strokeWidth="8"
+                                    strokeLinecap="round"
+                                    strokeDasharray={`${2 * Math.PI * 42}`}
+                                    initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
+                                    animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - animatedScore / 100) }}
+                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <motion.span
+                                    className="text-5xl font-bold"
+                                    style={{ color: scoreColor }}
+                                >
+                                    {animatedScore}
+                                </motion.span>
+                                <span className="text-gray-600 dark:text-gray-400 text-sm">out of 100</span>
                             </div>
                         </div>
-                    </motion.div>
-                ))}
-            </motion.div>
 
-            {/* Tips Section */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6"
-            >
-                <div className="flex items-center space-x-2 mb-4">
-                    <Info className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Improvement Tips</h3>
-                </div>
-                <ul className="space-y-2">
-                    {tips.map((tip, index) => (
-                        <motion.li
-                            key={index}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.5 + index * 0.1 }}
-                            className="flex items-start space-x-2"
-                        >
-                            <ChevronRight className="w-4 h-4 text-blue-400 mt-1 flex-shrink-0" />
-                            <span className="text-light-text-secondary dark:text-dark-text-secondary">{tip}</span>
-                        </motion.li>
-                    ))}
-                </ul>
-            </motion.div>
+                        {/* Score Info */}
+                        <div className="flex-1 text-center md:text-left">
+                            <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+                                <Star className="w-6 h-6" style={{ color: scoreColor }} />
+                                <span className="text-2xl font-bold" style={{ color: scoreColor }}>{scoreLabel}</span>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                                Your finance score is calculated based on your savings habits, spending patterns,
+                                goal progress, diversification, and consistency.
+                            </p>
+                        </div>
+                    </div>
+                </motion.div>
 
-            {/* Badges Section */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-light-surface/50 dark:bg-dark-surface/50 border border-light-border dark:border-dark-border rounded-2xl p-6"
-            >
-                <div className="flex items-center space-x-2 mb-6">
-                    <Award className="w-5 h-5 text-lime-accent" />
-                    <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Achievement Badges</h3>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {earnedBadges.map((badge, index) => (
+                {/* Score Breakdown */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
+                >
+                    {[
+                        { label: 'Savings Rate', value: breakdown.savingsRate, icon: PiggyBank, weight: '30%' },
+                        { label: 'Budget', value: breakdown.budgetAdherence, icon: Wallet, weight: '25%' },
+                        { label: 'Goals', value: breakdown.goalProgress, icon: Target, weight: '20%' },
+                        { label: 'Diversity', value: breakdown.diversification, icon: Shield, weight: '15%' },
+                        { label: 'Consistency', value: breakdown.consistency, icon: Zap, weight: '10%' },
+                    ].map((item, index) => (
                         <motion.div
-                            key={badge.id}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.6 + index * 0.05 }}
-                            className={`relative text-center p-4 rounded-xl transition-all ${badge.earned
-                                ? 'bg-lime-accent/20 border-2 border-lime-accent/50'
-                                : 'bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border opacity-50'
-                                }`}
+                            key={item.label}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 * index }}
+                            className="bg-light-surface/50 dark:bg-dark-surface/50 border border-light-border dark:border-dark-border rounded-xl p-4"
                         >
-                            <div className="text-3xl mb-2">{badge.icon}</div>
-                            <p className={`text-sm font-medium ${badge.earned ? 'text-light-text dark:text-dark-text' : 'text-light-text-secondary dark:text-dark-text-secondary'}`}>
-                                {badge.name}
-                            </p>
-                            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                                {badge.description}
-                            </p>
-                            {badge.earned && (
-                                <div className="absolute -top-1 -right-1 bg-lime-accent rounded-full p-1">
-                                    <Star className="w-3 h-3 text-dark-base" />
+                            <div className="flex items-center justify-between mb-3">
+                                <item.icon className="w-5 h-5 text-lime-accent" />
+                                <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{item.weight}</span>
+                            </div>
+                            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-1">{item.label}</p>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-xl font-bold text-light-text dark:text-dark-text">{item.value}</span>
+                                <div className="flex-1 h-2 bg-light-border dark:bg-dark-border rounded-full overflow-hidden">
+                                    <motion.div
+                                        className="h-full rounded-full"
+                                        style={{ backgroundColor: getScoreColor(item.value) }}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${item.value}%` }}
+                                        transition={{ duration: 1, delay: 0.3 + index * 0.1 }}
+                                    />
                                 </div>
-                            )}
+                            </div>
                         </motion.div>
                     ))}
-                </div>
-            </motion.div>
-        </div>
+                </motion.div>
+
+                {/* Tips Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6"
+                >
+                    <div className="flex items-center space-x-2 mb-4">
+                        <Info className="w-5 h-5 text-blue-400" />
+                        <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Improvement Tips</h3>
+                    </div>
+                    <ul className="space-y-2">
+                        {tips.map((tip, index) => (
+                            <motion.li
+                                key={index}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.5 + index * 0.1 }}
+                                className="flex items-start space-x-2"
+                            >
+                                <ChevronRight className="w-4 h-4 text-blue-400 mt-1 flex-shrink-0" />
+                                <span className="text-light-text-secondary dark:text-dark-text-secondary">{tip}</span>
+                            </motion.li>
+                        ))}
+                    </ul>
+                </motion.div>
+
+                {/* Badges Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="bg-light-surface/50 dark:bg-dark-surface/50 border border-light-border dark:border-dark-border rounded-2xl p-6"
+                >
+                    <div className="flex items-center space-x-2 mb-6">
+                        <Award className="w-5 h-5 text-lime-accent" />
+                        <h3 className="text-lg font-bold text-light-text dark:text-dark-text">Achievement Badges</h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {earnedBadges.map((badge, index) => (
+                            <motion.div
+                                key={badge.id}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.6 + index * 0.05 }}
+                                className={`relative text-center p-4 rounded-xl transition-all ${badge.earned
+                                    ? 'bg-lime-accent/20 border-2 border-lime-accent/50'
+                                    : 'bg-light-glass dark:bg-dark-glass border border-light-border dark:border-dark-border opacity-50'
+                                    }`}
+                            >
+                                <div className="text-3xl mb-2">{badge.icon}</div>
+                                <p className={`text-sm font-medium ${badge.earned ? 'text-light-text dark:text-dark-text' : 'text-light-text-secondary dark:text-dark-text-secondary'}`}>
+                                    {badge.name}
+                                </p>
+                                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                                    {badge.description}
+                                </p>
+                                {badge.earned && (
+                                    <div className="absolute -top-1 -right-1 bg-lime-accent rounded-full p-1">
+                                        <Star className="w-3 h-3 text-dark-base" />
+                                    </div>
+                                )}
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.div>
+            </div>
+        </PremiumGate>
     );
 };

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { walletService, Wallet, transactionService, Transaction, CreateTransactionInput } from '../services';
+import { walletService, Wallet, transactionService, Transaction, emailNotificationService } from '../services';
 
 interface WalletContextType {
     wallets: Wallet[];
@@ -122,6 +122,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const newBalance = wallet.balance + amount;
             await walletService.updateBalance(walletId, newBalance);
 
+            // Send email notification (async, don't block on it)
+            emailNotificationService.notifyDeposit(amount, wallet.currency).catch(err =>
+                console.log('Email notification skipped:', err)
+            );
+
             await refreshWallets();
             await refreshTransactions();
             return true;
@@ -156,6 +161,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             // Update wallet balance
             const newBalance = wallet.balance - amount;
             await walletService.updateBalance(walletId, newBalance);
+
+            // Send email notification (async, don't block on it)
+            emailNotificationService.notifyWithdrawal(amount, wallet.currency, 'pending').catch(err =>
+                console.log('Email notification skipped:', err)
+            );
 
             await refreshWallets();
             await refreshTransactions();
