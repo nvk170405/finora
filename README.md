@@ -12,7 +12,7 @@
 
 **A full-stack subscription-based SaaS platform for personal finance management with multi-currency tracking, AI insights, and auto-recurring billing.**
 
-[Live Demo](#) · [Report Bug](https://github.com/nvk170405/finora/issues) · [Request Feature](https://github.com/nvk170405/finora/issues)
+[Live Demo](https://finorax.vercel.app) · [Report Bug](https://github.com/nvk170405/finora/issues) · [Request Feature](https://github.com/nvk170405/finora/issues)
 
 </div>
 
@@ -32,14 +32,14 @@
 - **Spending Analytics** with charts and insights
 - **Email Notifications** for transactions, goals, and bills
 
-### � Subscription Billing
+### ✨ Subscription Billing
 - **Razorpay Auto-Recurring Subscriptions** (Monthly/Yearly)
 - Basic & Premium tiers with feature gating
 - Plan upgrades/downgrades with prorated billing
 - Subscription management UI with cancel option
 - Webhook handling for auto-renewal events
 
-### � Premium Features
+### 👑 Premium Features
 - AI-powered spending insights
 - Custom reports and analytics
 - Priority support
@@ -179,7 +179,7 @@ supabase secrets set GMAIL_APP_PASSWORD=your_app_password
 
 ---
 
-## � Roadmap
+## 🛣️ Roadmap
 
 - [ ] PWA for offline mode
 - [ ] AI voice journaling & mood analysis
