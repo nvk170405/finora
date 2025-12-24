@@ -1,91 +1,209 @@
-# 🌿 FinoraX — Modern Finance Tracker & Subscription-Based SaaS App
+<div align="center">
+  
+# 🌿 FinoraX
 
-FinoraX is a full-stack subscription-based SaaS application that helps users track multiple currencies, visualize spending insights, and manage subscriptions securely — built with cutting-edge tools like React, Vite, Supabase, Paddle, and Tailwind CSS.
+### **Smart Financial Management Platform**
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Razorpay](https://img.shields.io/badge/Razorpay-Payments-0A67C2?style=for-the-badge&logo=razorpay&logoColor=white)](https://razorpay.com/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+
+**A full-stack subscription-based SaaS platform for personal finance management with multi-currency tracking, AI insights, and auto-recurring billing.**
+
+[Live Demo](#) · [Report Bug](https://github.com/nvk170405/finora/issues) · [Request Feature](https://github.com/nvk170405/finora/issues)
+
+</div>
 
 ---
 
-## 🚀 Features
+## ✨ Features
 
-### 🧑‍💻 Authentication
-- Email/password login with Supabase Auth
-- OAuth support: Google, Apple, Meta (Facebook)
-- Magic link verification
-- Automatic user creation in Supabase database
+### � Authentication & Security
+- **Supabase Auth** with email/password and OAuth (Google, Apple, Meta)
+- Magic link verification with branded email templates
+- Row Level Security (RLS) for data isolation
+- JWT-based access with automatic policy checks
 
-### 💳 Subscription Management
-- Paddle Billing integration (Basic + Premium tiers)
-- Plan enforcement via Supabase and custom feature gating
-- Subscription status and billing cycle stored in Supabase
+### � Financial Management
+- **Multi-Currency Wallets** with live exchange rates
+- **Transaction Tracking** with categories and visual timeline
+- **Spending Analytics** with charts and insights
+- **Email Notifications** for transactions, goals, and bills
 
-### 📊 Dashboard Components
-- **Wallet Overview**: Multi-currency balance and live exchange rates
-- **Transaction Timeline**: Visual breakdown of all user activity
-- **Insights Page**: Spending analysis and mood tracking (AI-ready)
-- **Profile & Settings**: Secure user controls
+### � Subscription Billing
+- **Razorpay Auto-Recurring Subscriptions** (Monthly/Yearly)
+- Basic & Premium tiers with feature gating
+- Plan upgrades/downgrades with prorated billing
+- Subscription management UI with cancel option
+- Webhook handling for auto-renewal events
 
-### 🔐 Access Control
-- Protected routes with React Router
-- Role-based feature gating via `SubscriptionGate`
-- Supabase RLS (Row Level Security) for user-specific data protection
+### � Premium Features
+- AI-powered spending insights
+- Custom reports and analytics
+- Priority support
+- Multi-account management
 
-### 🌗 UI & Theming
-- Built with Tailwind CSS + ShadCN UI
-- Custom dark/light modes and premium themes
-- Glassmorphism + Lucide icons for a modern look
-- Responsive design with smooth animations (Framer Motion)
+### 🌗 Modern UI/UX
+- Dark/Light theme with system preference detection
+- Glassmorphism design with smooth animations
+- Responsive layout for all devices
+- Framer Motion animations
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer          | Tech Stack                        |
-| -------------- | --------------------------------- |
-| Frontend       | React + Vite + TypeScript         |
-| Backend/Auth   | Supabase (DB + Auth + Storage)    |
-| Payments       | Paddle Billing API                |
-| Styling        | Tailwind CSS + ShadCN + Lucide    |
-| Animations     | Framer Motion                     |
-| Deployment     | Vercel / Netlify (optional)       |
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 19 + Vite + TypeScript |
+| **Backend** | Supabase (PostgreSQL + Auth + Edge Functions) |
+| **Payments** | Razorpay Subscriptions API |
+| **Email** | Gmail SMTP via Supabase Edge Functions |
+| **Styling** | Tailwind CSS + Custom Design System |
+| **Animations** | Framer Motion |
+| **Icons** | Lucide React |
 
 ---
 
-## 📁 Folder Structure
+## 📁 Project Structure
 
-/src
+```
+finora/
+├── src/
+│   ├── components/      # Reusable UI components
+│   ├── contexts/        # Auth, Subscription, Wallet, Preferences
+│   ├── pages/           # Route pages (Login, Signup, Dashboard)
+│   ├── services/        # API services (wallet, transactions, email)
+│   ├── hooks/           # Custom hooks (useRazorpay)
+│   ├── config/          # Supabase client configuration
+│   └── App.tsx          # Root component with routing
 │
-├── components/ # Reusable UI components
-├── contexts/ # Auth and Subscription context providers
-├── config/ # Utility functions (e.g. Supabase client)
-├── pages/ # Route pages like login, signup, dashboard
-├── assets/ # Static assets
-├── index.css/ # Tailwind/global styles
-├── App.tsx # Root component
-└── main.tsx # Vite entry point
+├── supabase/
+│   └── functions/       # Edge Functions
+│       ├── create-razorpay-order/    # Create subscription
+│       ├── verify-razorpay-payment/  # Verify payment
+│       ├── update-subscription/      # Upgrade/downgrade
+│       ├── cancel-subscription/      # Cancel subscription
+│       ├── razorpay-webhook/         # Handle auto-renewals
+│       └── send-email/               # Email notifications
+│
+└── public/              # Static assets
+```
 
-🛡️ Security Notes
-├── Row Level Security (RLS) is enforced in Supabase for tables like users, subscriptions, transactions.
+---
 
-├── JWT-based access with automatic policy checks.
+## 🚀 Getting Started
 
-├── User data is isolated and never exposed publicly.
+### Prerequisites
+- Node.js 18+
+- Supabase account
+- Razorpay account
 
+### Installation
 
-💡 Future Improvements
-├── PWA for offline mode
+```bash
+# Clone the repository
+git clone https://github.com/nvk170405/finora.git
+cd finora
 
-├── AI voice journaling & mood analysis
+# Install dependencies
+npm install
 
-├── Notion & Google Calendar integration
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase and Razorpay credentials
 
-├── Admin dashboard for user insights
+# Run development server
+npm run dev
+```
 
-├── Analytics + Heatmaps
+### Environment Variables
 
-🧑‍🎓 Author
-Built by Navketan Singh 🚀
-Let’s connect on Twitter: @singh_navk42168
-Have questions or feedback? Open an issue or DM me!
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_RAZORPAY_KEY_ID=rzp_test_xxxxx
+```
 
-⭐️ Show your support
-If you liked this project, consider starring it ⭐️
-or sharing it with your friends who are building SaaS apps 💬
+### Supabase Secrets (Edge Functions)
+
+```bash
+supabase secrets set RAZORPAY_KEY_ID=rzp_test_xxxxx
+supabase secrets set RAZORPAY_KEY_SECRET=your_secret_key
+supabase secrets set RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+supabase secrets set RAZORPAY_PLAN_BASIC_MONTHLY=plan_xxxxx
+supabase secrets set RAZORPAY_PLAN_BASIC_YEARLY=plan_xxxxx
+supabase secrets set RAZORPAY_PLAN_PREMIUM_MONTHLY=plan_xxxxx
+supabase secrets set RAZORPAY_PLAN_PREMIUM_YEARLY=plan_xxxxx
+supabase secrets set GMAIL_USER=your_email@gmail.com
+supabase secrets set GMAIL_APP_PASSWORD=your_app_password
+```
+
+---
+
+## 📧 Email Notifications
+
+| Email Type | Trigger |
+|------------|---------|
+| Welcome | On signup |
+| Transaction Confirmation | On deposit/withdrawal |
+| Subscription Confirmed | On successful subscription |
+| Goal Reached | When savings goal is met |
+| Bill Due Reminder | Before bill due date |
+
+---
+
+## 💳 Subscription Plans
+
+| Feature | Basic | Premium |
+|---------|-------|---------|
+| Multi-currency wallets | Up to 5 | Unlimited |
+| Analytics | Basic | Advanced + AI |
+| Support | Standard | Priority |
+| API Access | ❌ | ✅ |
+| Custom Reports | ❌ | ✅ |
+
+**Billing:** Monthly or Yearly with auto-renewal via Razorpay
+
+---
+
+## 🛡️ Security
+
+- **Row Level Security (RLS)** enforced on all tables
+- **JWT-based authentication** with Supabase
+- **Webhook signature verification** for payment events
+- **User data isolation** — no public data exposure
+- **Secrets stored securely** in Supabase vault
+
+---
+
+## � Roadmap
+
+- [ ] PWA for offline mode
+- [ ] AI voice journaling & mood analysis
+- [ ] Notion & Google Calendar integration
+- [ ] Admin dashboard for analytics
+- [ ] Mobile apps (React Native)
+
+---
+
+## 👨‍💻 Author
+
+<div align="center">
+  
+**Built with 💚 by Navketan Singh**
+
+[![Twitter](https://img.shields.io/badge/Twitter-@singh__navk42168-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/singh_navk42168)
+[![GitHub](https://img.shields.io/badge/GitHub-nvk170405-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nvk170405)
+
+</div>
+
+---
+
+<div align="center">
+  
+**⭐ Star this repo if you found it helpful!**
+
+</div>
