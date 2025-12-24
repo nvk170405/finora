@@ -1,3 +1,6 @@
+// Razorpay Webhook Handler - Auto-Recurring Subscription Events
+// Handles subscription charged/halted/cancelled events for auto-renewal
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts"
@@ -49,6 +52,7 @@ serve(async (req) => {
         const payload = JSON.parse(body)
         const event = payload.event
         const paymentEntity = payload.payload?.payment?.entity
+        const subscriptionEntity = payload.payload?.subscription?.entity
 
         console.log('Received webhook event:', event)
 
@@ -57,6 +61,117 @@ serve(async (req) => {
 
         // Handle different event types
         switch (event) {
+            case 'subscription.authenticated':
+                // First payment authorized but not charged yet
+                console.log('Subscription authenticated:', subscriptionEntity?.id)
+                break
+
+            case 'subscription.activated':
+                // Subscription is now active
+                console.log('Subscription activated:', subscriptionEntity?.id)
+                // This is handled by verify-razorpay-payment
+                break
+
+            case 'subscription.charged':
+                // Recurring payment successful - EXTEND SUBSCRIPTION
+                console.log('Subscription charged (auto-renewal):', subscriptionEntity?.id)
+
+                if (subscriptionEntity?.notes?.userId) {
+                    const userId = subscriptionEntity.notes.userId
+                    const billingCycle = subscriptionEntity.notes.billingCycle
+                    const plan = subscriptionEntity.notes.plan
+
+                    // Calculate new end date
+                    const endDate = new Date()
+                    if (billingCycle === 'monthly') {
+                        endDate.setMonth(endDate.getMonth() + 1)
+                    } else {
+                        endDate.setFullYear(endDate.getFullYear() + 1)
+                    }
+
+                    // Extend subscription in database
+                    const { error: updateError } = await supabase
+                        .from('subscriptions')
+                        .update({
+                            end_date: endDate.toISOString(),
+                            payment_status: 'active',
+                            razorpay_payment_id: paymentEntity?.id,
+                            updated_at: new Date().toISOString(),
+                        })
+                        .eq('user_id', userId)
+
+                    if (updateError) {
+                        console.error('Error extending subscription:', updateError)
+                    } else {
+                        console.log(`Subscription extended for user ${userId} until ${endDate.toISOString()}`)
+                    }
+
+                    // Log the payment
+                    await supabase.from('payment_logs').insert({
+                        event_type: 'subscription.charged',
+                        payment_id: paymentEntity?.id,
+                        subscription_id: subscriptionEntity?.id,
+                        amount: paymentEntity?.amount / 100,
+                        currency: paymentEntity?.currency || 'INR',
+                        status: 'charged',
+                        user_id: userId,
+                        raw_payload: payload,
+                        created_at: new Date().toISOString(),
+                    })
+                }
+                break
+
+            case 'subscription.halted':
+                // Payment failed after retries - subscription halted
+                console.log('Subscription halted (payment failed):', subscriptionEntity?.id)
+
+                if (subscriptionEntity?.notes?.userId) {
+                    const userId = subscriptionEntity.notes.userId
+
+                    // Mark subscription as halted
+                    await supabase
+                        .from('subscriptions')
+                        .update({
+                            payment_status: 'halted',
+                            updated_at: new Date().toISOString(),
+                        })
+                        .eq('user_id', userId)
+
+                    console.log(`Subscription halted for user ${userId}`)
+                }
+                break
+
+            case 'subscription.cancelled':
+                // User cancelled the subscription
+                console.log('Subscription cancelled:', subscriptionEntity?.id)
+
+                if (subscriptionEntity?.notes?.userId) {
+                    const userId = subscriptionEntity.notes.userId
+
+                    // Mark subscription as cancelled but keep end_date for access until expiry
+                    await supabase
+                        .from('subscriptions')
+                        .update({
+                            payment_status: 'cancelled',
+                            is_auto_renew: false,
+                            updated_at: new Date().toISOString(),
+                        })
+                        .eq('user_id', userId)
+
+                    console.log(`Subscription cancelled for user ${userId}`)
+                }
+                break
+
+            case 'subscription.completed':
+                // Subscription reached total_count
+                console.log('Subscription completed:', subscriptionEntity?.id)
+                break
+
+            case 'subscription.pending':
+                // Subscription is pending (awaiting payment)
+                console.log('Subscription pending:', subscriptionEntity?.id)
+                break
+
             case 'payment.captured':
                 console.log('Payment captured:', paymentEntity?.id)
 
@@ -67,14 +182,11 @@ serve(async (req) => {
                         event_type: 'payment.captured',
                         payment_id: paymentEntity?.id,
                         order_id: paymentEntity?.order_id,
-                        amount: paymentEntity?.amount / 100, // Convert from paise to rupees
+                        amount: paymentEntity?.amount / 100,
                         currency: paymentEntity?.currency,
                         status: 'captured',
                         raw_payload: payload,
                         created_at: new Date().toISOString(),
-                    })
-                    .then(({ error }) => {
-                        if (error) console.error('Error logging payment:', error)
                     })
                 break
 
@@ -96,20 +208,10 @@ serve(async (req) => {
                         raw_payload: payload,
                         created_at: new Date().toISOString(),
                     })
-                    .then(({ error }) => {
-                        if (error) console.error('Error logging failed payment:', error)
-                    })
-                break
-
-            case 'subscription.activated':
-            case 'subscription.charged':
-                console.log('Subscription event:', event, paymentEntity?.id)
-                // Handle subscription events if using Razorpay Subscriptions
                 break
 
             case 'refund.created':
                 console.log('Refund created:', payload.payload?.refund?.entity?.id)
-                // Handle refunds
                 break
 
             default:

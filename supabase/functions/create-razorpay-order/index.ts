@@ -1,24 +1,11 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
+// Razorpay Subscription Creation Edge Function
+// Creates auto-recurring subscriptions using Razorpay Subscriptions API
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Plan pricing in paise (smallest currency unit)
-const PLAN_PRICING = {
-    basic: {
-        monthly: 79900,    // ₹799
-        yearly: 799000,    // ₹7,990
-    },
-    premium: {
-        monthly: 199900,   // ₹1,999
-        yearly: 1999000,   // ₹19,990
-    },
 }
 
 serve(async (req) => {
@@ -31,11 +18,22 @@ serve(async (req) => {
         const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
         const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
 
+        // Plan IDs from environment variables (secrets)
+        const PLAN_IDS = {
+            basic_monthly: Deno.env.get('RAZORPAY_PLAN_BASIC_MONTHLY'),
+            basic_yearly: Deno.env.get('RAZORPAY_PLAN_BASIC_YEARLY'),
+            premium_monthly: Deno.env.get('RAZORPAY_PLAN_PREMIUM_MONTHLY'),
+            premium_yearly: Deno.env.get('RAZORPAY_PLAN_PREMIUM_YEARLY'),
+        }
+
         if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+            console.error('Missing Razorpay credentials')
             throw new Error('Razorpay credentials not configured')
         }
 
         const { plan, billingCycle, userId } = await req.json()
+
+        console.log('Received request:', { plan, billingCycle, userId })
 
         // Validate inputs
         if (!plan || !billingCycle || !userId) {
@@ -50,18 +48,25 @@ serve(async (req) => {
             throw new Error('Invalid billing cycle')
         }
 
-        // Get the amount based on plan and billing cycle
-        const amount = PLAN_PRICING[plan as keyof typeof PLAN_PRICING][billingCycle as 'monthly' | 'yearly']
+        // Get the plan ID based on plan and billing cycle
+        const planKey = `${plan}_${billingCycle}` as keyof typeof PLAN_IDS
+        const planId = PLAN_IDS[planKey]
 
-        // Create Razorpay order - receipt must be max 40 chars
-        const shortUserId = userId.substring(0, 8)
-        const timestamp = Date.now().toString().slice(-8)
-        const receipt = `${shortUserId}_${plan}_${billingCycle.charAt(0)}_${timestamp}`
+        if (!planId) {
+            console.error('Plan ID not configured for:', planKey)
+            throw new Error(`Plan ID not configured: ${planKey}. Please set RAZORPAY_PLAN_${plan.toUpperCase()}_${billingCycle.toUpperCase()} secret.`)
+        }
 
-        const orderData = {
-            amount: amount,
-            currency: 'INR',
-            receipt: receipt,
+        const auth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
+
+        // Total billing cycles (max 120 for monthly = 10 years, or 10 for yearly)
+        const totalCount = billingCycle === 'monthly' ? 120 : 10
+
+        // Create Razorpay Subscription
+        const subscriptionData = {
+            plan_id: planId,
+            total_count: totalCount,
+            customer_notify: 1,
             notes: {
                 userId: userId,
                 plan: plan,
@@ -69,30 +74,31 @@ serve(async (req) => {
             }
         }
 
-        const auth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
+        console.log('Creating subscription with:', { planId, planKey, totalCount })
 
-        const response = await fetch('https://api.razorpay.com/v1/orders', {
+        const response = await fetch('https://api.razorpay.com/v1/subscriptions', {
             method: 'POST',
             headers: {
                 'Authorization': `Basic ${auth}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(orderData),
+            body: JSON.stringify(subscriptionData),
         })
 
+        const responseData = await response.json()
+
         if (!response.ok) {
-            const errorData = await response.json()
-            console.error('Razorpay error:', errorData)
-            throw new Error(`Razorpay order creation failed: ${errorData.error?.description || 'Unknown error'}`)
+            console.error('Razorpay error:', responseData)
+            throw new Error(`Razorpay subscription creation failed: ${responseData.error?.description || JSON.stringify(responseData)}`)
         }
 
-        const order = await response.json()
+        console.log('Subscription created:', responseData.id)
 
         return new Response(
             JSON.stringify({
-                orderId: order.id,
-                amount: order.amount,
-                currency: order.currency,
+                subscriptionId: responseData.id,
+                shortUrl: responseData.short_url,
+                status: responseData.status,
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -100,7 +106,7 @@ serve(async (req) => {
             }
         )
     } catch (error) {
-        console.error('Error creating order:', error)
+        console.error('Error creating subscription:', error.message)
         return new Response(
             JSON.stringify({ error: error.message }),
             {

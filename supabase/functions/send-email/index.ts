@@ -126,6 +126,30 @@ const templates = {
         subject: `😢 Your FinoraX trial has expired`,
         html: `<div style="font-family: Arial;"><h1>FinoraX</h1><p>Hi ${name}, your trial has expired. Subscribe to continue!</p></div>`
     }),
+
+    // Subscription confirmed
+    subscriptionConfirmed: (name: string, plan: string, billingCycle: string, nextBillingDate: string) => ({
+        subject: `🎉 Welcome to FinoraX ${plan.charAt(0).toUpperCase() + plan.slice(1)}!`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #ffffff; padding: 40px; border-radius: 16px;">
+                <h1 style="color: #a3e635; text-align: center;">FinoraX</h1>
+                <h2 style="color: #ffffff;">Thank You for Subscribing! 🎉</h2>
+                <p style="color: #a0a0a0;">Hi ${name},</p>
+                <p style="color: #a0a0a0;">Your subscription is now active. Here are your plan details:</p>
+                <div style="background: linear-gradient(135deg, #a3e635 0%, #22c55e 100%); padding: 25px; border-radius: 12px; margin: 20px 0; text-align: center;">
+                    <h3 style="color: #1a1a2e; margin: 0; text-transform: capitalize;">${plan} Plan</h3>
+                    <p style="color: #1a1a2e; font-size: 18px; margin: 10px 0; text-transform: capitalize;">Billed ${billingCycle}</p>
+                </div>
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                    <p style="margin: 8px 0;"><strong style="color: #a3e635;">Status:</strong> <span style="color: #22c55e;">Active</span></p>
+                    <p style="margin: 8px 0;"><strong style="color: #a3e635;">Next Billing:</strong> ${nextBillingDate}</p>
+                    <p style="margin: 8px 0;"><strong style="color: #a3e635;">Auto-Renewal:</strong> Enabled</p>
+                </div>
+                <p style="color: #a0a0a0;">Thank you for choosing FinoraX for your financial management needs!</p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated email from FinoraX. You can manage your subscription in the Settings page.</p>
+            </div>
+        `
+    }),
 }
 
 // Simple SMTP client using Deno.connect (Deno v2 compatible)
@@ -255,6 +279,9 @@ serve(async (req: Request) => {
                 break
             case 'trial_expired':
                 emailContent = templates.trialExpired(name)
+                break
+            case 'subscription_confirmed':
+                emailContent = templates.subscriptionConfirmed(name, data.plan, data.billingCycle, data.nextBillingDate)
                 break
             default:
                 throw new Error('Invalid email type')

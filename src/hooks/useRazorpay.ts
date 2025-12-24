@@ -3,10 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
     loadRazorpayScript,
-    createOrder,
-    verifyPayment,
-    openRazorpayCheckout,
+    createSubscription,
+    verifySubscriptionPayment,
+    openRazorpaySubscriptionCheckout,
 } from '../services/razorpayService';
+import { emailNotificationService } from '../services';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
 interface UseRazorpayReturn {
@@ -33,7 +34,7 @@ export const useRazorpay = (): UseRazorpayReturn => {
             setError(null);
 
             try {
-                console.log('🔄 Starting payment flow for:', plan, billingCycle);
+                console.log('🔄 Starting subscription flow for:', plan, billingCycle);
 
                 // Load Razorpay script
                 console.log('📜 Loading Razorpay script...');
@@ -43,15 +44,15 @@ export const useRazorpay = (): UseRazorpayReturn => {
                 }
                 console.log('✅ Razorpay script loaded');
 
-                // Create order via Edge Function
-                console.log('📦 Creating order via Edge Function...');
-                const { orderId, amount } = await createOrder(plan, billingCycle, user.id);
-                console.log('✅ Order created:', { orderId, amount });
+                // Create subscription via Edge Function
+                console.log('📦 Creating subscription via Edge Function...');
+                const { subscriptionId } = await createSubscription(plan, billingCycle, user.id);
+                console.log('✅ Subscription created:', subscriptionId);
 
-                // Open Razorpay checkout
-                openRazorpayCheckout(
-                    orderId,
-                    amount,
+                // Open Razorpay checkout for subscription
+                // Pass subscriptionId to the callback so we can use it for verification
+                openRazorpaySubscriptionCheckout(
+                    subscriptionId,
                     plan,
                     billingCycle,
                     user.email || '',
@@ -59,12 +60,26 @@ export const useRazorpay = (): UseRazorpayReturn => {
                     async (response) => {
                         try {
                             console.log('💳 Payment completed, verifying...', response);
-                            // Verify payment
-                            const result = await verifyPayment(response, plan, billingCycle, user.id);
+
+                            // Add the subscription_id to the response since Razorpay only returns payment_id
+                            const fullResponse = {
+                                ...response,
+                                razorpay_subscription_id: subscriptionId,
+                            };
+
+                            // Verify subscription payment
+                            const result = await verifySubscriptionPayment(fullResponse, plan, billingCycle, user.id);
                             console.log('✅ Verification result:', result);
 
                             if (result.success) {
                                 console.log('🔄 Refreshing subscription...');
+                                console.log('🔁 Auto-renewal enabled:', result.autoRenew);
+
+                                // Send subscription confirmation email
+                                emailNotificationService.notifySubscription(plan, billingCycle)
+                                    .then(() => console.log('📧 Subscription confirmation email sent'))
+                                    .catch(err => console.error('Email error:', err));
+
                                 // Refresh subscription state
                                 await refreshSubscription();
                                 console.log('🏠 Redirecting to dashboard...');
@@ -87,8 +102,8 @@ export const useRazorpay = (): UseRazorpayReturn => {
                     }
                 );
             } catch (err: any) {
-                console.error('Payment initiation error:', err);
-                setError(err.message || 'Failed to initiate payment');
+                console.error('Subscription initiation error:', err);
+                setError(err.message || 'Failed to initiate subscription');
                 setLoading(false);
             }
         },

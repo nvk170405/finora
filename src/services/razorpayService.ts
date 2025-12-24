@@ -21,14 +21,12 @@ export const PLAN_NAMES = {
     premium: 'Premium Plan',
 } as const;
 
-interface RazorpayOptions {
+interface RazorpaySubscriptionOptions {
     key: string;
-    amount: number;
-    currency: string;
+    subscription_id: string;
     name: string;
     description: string;
-    order_id: string;
-    handler: (response: RazorpayResponse) => void;
+    handler: (response: RazorpaySubscriptionResponse) => void;
     prefill: {
         name?: string;
         email?: string;
@@ -42,21 +40,21 @@ interface RazorpayOptions {
     };
 }
 
-interface RazorpayResponse {
+interface RazorpaySubscriptionResponse {
     razorpay_payment_id: string;
-    razorpay_order_id: string;
+    razorpay_subscription_id: string;
     razorpay_signature: string;
 }
 
-interface CreateOrderResponse {
-    orderId: string;
-    amount: number;
-    currency: string;
+interface CreateSubscriptionResponse {
+    subscriptionId: string;
+    shortUrl?: string;
+    status: string;
 }
 
 declare global {
     interface Window {
-        Razorpay: new (options: RazorpayOptions) => {
+        Razorpay: new (options: RazorpaySubscriptionOptions) => {
             open: () => void;
             close: () => void;
         };
@@ -84,34 +82,35 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 };
 
 /**
- * Create Razorpay order via Supabase Edge Function
+ * Create Razorpay Subscription via Supabase Edge Function
+ * This creates an auto-recurring subscription instead of a one-time order
  */
-export const createOrder = async (
+export const createSubscription = async (
     plan: 'basic' | 'premium',
     billingCycle: 'monthly' | 'yearly',
     userId: string
-): Promise<CreateOrderResponse> => {
+): Promise<CreateSubscriptionResponse> => {
     const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
         body: { plan, billingCycle, userId },
     });
 
     if (error) {
-        console.error('Error creating order:', error);
-        throw new Error(error.message || 'Failed to create order');
+        console.error('Error creating subscription:', error);
+        throw new Error(error.message || 'Failed to create subscription');
     }
 
     return data;
 };
 
 /**
- * Verify payment via Supabase Edge Function
+ * Verify subscription payment via Supabase Edge Function
  */
-export const verifyPayment = async (
-    paymentData: RazorpayResponse,
+export const verifySubscriptionPayment = async (
+    paymentData: RazorpaySubscriptionResponse,
     plan: 'basic' | 'premium',
     billingCycle: 'monthly' | 'yearly',
     userId: string
-): Promise<{ success: boolean; message: string }> => {
+): Promise<{ success: boolean; message: string; autoRenew?: boolean }> => {
     const { data, error } = await supabase.functions.invoke('verify-razorpay-payment', {
         body: {
             ...paymentData,
@@ -130,25 +129,23 @@ export const verifyPayment = async (
 };
 
 /**
- * Open Razorpay checkout
+ * Open Razorpay checkout for subscription
+ * Uses subscription_id instead of order_id for auto-recurring billing
  */
-export const openRazorpayCheckout = (
-    orderId: string,
-    amount: number,
+export const openRazorpaySubscriptionCheckout = (
+    subscriptionId: string,
     plan: 'basic' | 'premium',
     billingCycle: 'monthly' | 'yearly',
     userEmail: string,
     userName: string,
-    onSuccess: (response: RazorpayResponse) => void,
+    onSuccess: (response: RazorpaySubscriptionResponse) => void,
     onDismiss?: () => void
 ): void => {
-    const options: RazorpayOptions = {
+    const options: RazorpaySubscriptionOptions = {
         key: RAZORPAY_KEY_ID,
-        amount: amount,
-        currency: 'INR',
+        subscription_id: subscriptionId,
         name: 'FinoraX',
-        description: `${PLAN_NAMES[plan]} - ${billingCycle === 'monthly' ? 'Monthly' : 'Yearly'} Subscription`,
-        order_id: orderId,
+        description: `${PLAN_NAMES[plan]} - ${billingCycle === 'monthly' ? 'Monthly' : 'Yearly'} Auto-Renewing Subscription`,
         handler: onSuccess,
         prefill: {
             name: userName,
@@ -165,3 +162,8 @@ export const openRazorpayCheckout = (
     const razorpay = new window.Razorpay(options);
     razorpay.open();
 };
+
+// Legacy exports for backward compatibility (deprecated)
+export const createOrder = createSubscription;
+export const verifyPayment = verifySubscriptionPayment;
+export const openRazorpayCheckout = openRazorpaySubscriptionCheckout;

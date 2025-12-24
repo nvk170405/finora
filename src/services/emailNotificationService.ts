@@ -9,7 +9,8 @@ export type EmailType =
     | 'deposit'
     | 'withdrawal'
     | 'trial_expiring'
-    | 'trial_expired';
+    | 'trial_expired'
+    | 'subscription_confirmed';
 
 interface EmailData {
     // Transaction
@@ -26,6 +27,10 @@ interface EmailData {
     // Other
     status?: string;
     daysLeft?: number;
+    // Subscription
+    plan?: string;
+    billingCycle?: string;
+    nextBillingDate?: string;
 }
 
 export const emailNotificationService = {
@@ -165,5 +170,29 @@ export const emailNotificationService = {
      */
     async notifyTrialExpired(): Promise<boolean> {
         return this.sendEmail('trial_expired', {});
+    },
+
+    /**
+     * Send subscription confirmation email
+     */
+    async notifySubscription(plan: string, billingCycle: string): Promise<boolean> {
+        // Calculate next billing date
+        const nextDate = new Date();
+        if (billingCycle === 'monthly') {
+            nextDate.setMonth(nextDate.getMonth() + 1);
+        } else {
+            nextDate.setFullYear(nextDate.getFullYear() + 1);
+        }
+        const nextBillingDate = nextDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        return this.sendEmail('subscription_confirmed', {
+            plan,
+            billingCycle,
+            nextBillingDate
+        });
     }
 };

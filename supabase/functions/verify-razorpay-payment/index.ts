@@ -1,6 +1,8 @@
+// Razorpay Subscription Verification Edge Function
+// Verifies subscription payment and activates user subscription
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -14,13 +16,10 @@ serve(async (req) => {
     }
 
     try {
+        const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID')
         const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
         const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
         const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-        if (!RAZORPAY_KEY_SECRET) {
-            throw new Error('Razorpay secret not configured')
-        }
 
         if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
             throw new Error('Supabase credentials not configured')
@@ -28,15 +27,17 @@ serve(async (req) => {
 
         const {
             razorpay_payment_id,
-            razorpay_order_id,
+            razorpay_subscription_id,
             razorpay_signature,
             plan,
             billingCycle,
             userId,
         } = await req.json()
 
+        console.log('Verifying payment:', { razorpay_payment_id, razorpay_subscription_id, plan, billingCycle, userId })
+
         // Validate inputs
-        if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+        if (!razorpay_payment_id || !razorpay_subscription_id) {
             throw new Error('Missing payment verification data')
         }
 
@@ -44,13 +45,26 @@ serve(async (req) => {
             throw new Error('Missing subscription data')
         }
 
-        // Verify the payment signature
-        const generatedSignature = createHmac('sha256', RAZORPAY_KEY_SECRET)
-            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-            .digest('hex')
+        // For subscriptions, verify by fetching the subscription from Razorpay API
+        const auth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
+        const subscriptionResponse = await fetch(`https://api.razorpay.com/v1/subscriptions/${razorpay_subscription_id}`, {
+            headers: {
+                'Authorization': `Basic ${auth}`,
+            },
+        })
 
-        if (generatedSignature !== razorpay_signature) {
-            throw new Error('Payment verification failed: Invalid signature')
+        const subscriptionData = await subscriptionResponse.json()
+
+        if (!subscriptionResponse.ok) {
+            console.error('Failed to fetch subscription:', subscriptionData)
+            throw new Error('Failed to verify subscription with Razorpay')
+        }
+
+        console.log('Subscription status from Razorpay:', subscriptionData.status)
+
+        // Verify the subscription is active or authenticated
+        if (!['active', 'authenticated', 'created'].includes(subscriptionData.status)) {
+            throw new Error(`Invalid subscription status: ${subscriptionData.status}`)
         }
 
         // Create Supabase client with service role key for admin operations
@@ -66,25 +80,28 @@ serve(async (req) => {
         }
 
         // Update or create subscription
-        const { data: existingSubscription, error: fetchError } = await supabase
+        const { data: existingSubscription } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('user_id', userId)
             .single()
 
+        const subscriptionRecord = {
+            plan: plan,
+            billing_cycle: billingCycle,
+            razorpay_payment_id: razorpay_payment_id,
+            razorpay_subscription_id: razorpay_subscription_id,
+            payment_status: 'active',
+            start_date: now.toISOString(),
+            end_date: endDate.toISOString(),
+            is_auto_renew: true,
+        }
+
         if (existingSubscription) {
             // Update existing subscription
             const { error: updateError } = await supabase
                 .from('subscriptions')
-                .update({
-                    plan: plan,
-                    billing_cycle: billingCycle,
-                    razorpay_payment_id: razorpay_payment_id,
-                    razorpay_order_id: razorpay_order_id,
-                    payment_status: 'completed',
-                    start_date: now.toISOString(),
-                    end_date: endDate.toISOString(),
-                })
+                .update(subscriptionRecord)
                 .eq('user_id', userId)
 
             if (updateError) {
@@ -97,13 +114,7 @@ serve(async (req) => {
                 .from('subscriptions')
                 .insert({
                     user_id: userId,
-                    plan: plan,
-                    billing_cycle: billingCycle,
-                    razorpay_payment_id: razorpay_payment_id,
-                    razorpay_order_id: razorpay_order_id,
-                    payment_status: 'completed',
-                    start_date: now.toISOString(),
-                    end_date: endDate.toISOString(),
+                    ...subscriptionRecord,
                 })
 
             if (insertError) {
@@ -112,26 +123,13 @@ serve(async (req) => {
             }
         }
 
-        // Get user email for confirmation
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
-
-        if (userData?.user?.email) {
-            // Send confirmation email using Supabase Auth email (or custom email service)
-            // Note: For production, you might want to use a proper email service like Resend, SendGrid, etc.
-            console.log(`Payment confirmation for ${userData.user.email}:`, {
-                plan,
-                billingCycle,
-                paymentId: razorpay_payment_id,
-            })
-
-            // You can integrate with Resend, SendGrid, or other email services here
-            // For now, we'll just log it
-        }
+        console.log(`Subscription activated for user ${userId}`)
 
         return new Response(
             JSON.stringify({
                 success: true,
-                message: 'Payment verified and subscription activated',
+                message: 'Subscription activated with auto-renewal',
+                autoRenew: true,
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -139,7 +137,7 @@ serve(async (req) => {
             }
         )
     } catch (error) {
-        console.error('Error verifying payment:', error)
+        console.error('Error verifying payment:', error.message)
         return new Response(
             JSON.stringify({
                 success: false,

@@ -17,14 +17,14 @@ import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { ThemeToggle } from './ThemeToggle';
-import { userService, UserSettings } from '../services';
+import { userService, UserSettings, subscriptionManagementService } from '../services';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 
 export const SettingsPage: React.FC = () => {
   const { plan, billingCycle } = useSubscription();
   const { user } = useAuth();
-  const { defaultCurrency, setDefaultCurrency, displayName: contextDisplayName, setDisplayName: setContextDisplayName } = usePreferences();
+  const { defaultCurrency, setDefaultCurrency, setDisplayName: setContextDisplayName } = usePreferences();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +34,8 @@ export const SettingsPage: React.FC = () => {
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   // Password form
@@ -178,6 +180,24 @@ export const SettingsPage: React.FC = () => {
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelLoading(true);
+    try {
+      const result = await subscriptionManagementService.cancel(true); // Cancel at cycle end
+      if (result.success) {
+        showToast('Subscription cancelled. You can use your plan until the end of your billing period.');
+        setShowCancelModal(false);
+      } else {
+        showToast(result.error || 'Failed to cancel subscription');
+      }
+    } catch (err: any) {
+      console.error('Error cancelling subscription:', err);
+      showToast('Failed to cancel subscription');
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
   if (loading) {
@@ -426,13 +446,22 @@ export const SettingsPage: React.FC = () => {
                 <span className="font-medium text-light-text dark:text-dark-text capitalize">{billingCycle || 'N/A'}</span>
               </div>
               {plan && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Status</span>
-                  <span className="flex items-center space-x-1 text-green-500">
-                    <Check className="w-4 h-4" />
-                    <span className="text-sm font-medium">Active</span>
-                  </span>
-                </div>
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Status</span>
+                    <span className="flex items-center space-x-1 text-green-500">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm font-medium">Active</span>
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Auto-Renewal</span>
+                    <span className="flex items-center space-x-1 text-lime-accent">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm font-medium">Enabled</span>
+                    </span>
+                  </div>
+                </>
               )}
               <div className="pt-2 space-y-2">
                 {plan === 'basic' && (
@@ -460,8 +489,16 @@ export const SettingsPage: React.FC = () => {
                   onClick={() => navigate('/pricing')}
                   className="w-full border border-light-border dark:border-dark-border text-light-text dark:text-dark-text py-2 rounded-lg font-medium hover:border-lime-accent/50 transition-colors"
                 >
-                  View All Plans
+                  {plan ? 'Change Plan' : 'View All Plans'}
                 </button>
+                {plan && (
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full text-red-400 text-sm py-2 hover:text-red-300 transition-colors"
+                  >
+                    Cancel Subscription
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -597,6 +634,56 @@ export const SettingsPage: React.FC = () => {
                   className={`flex-1 px-4 py-3 rounded-xl font-medium ${settings?.two_factor_enabled ? 'bg-red-500 text-white' : 'bg-lime-accent text-dark-base'}`}
                 >
                   {settings?.two_factor_enabled ? 'Disable 2FA' : 'Enable 2FA'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Cancel Subscription Modal */}
+        {showCancelModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowCancelModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-light-text dark:text-dark-text">Cancel Subscription</h3>
+                <button onClick={() => setShowCancelModal(false)} className="text-light-text-secondary hover:text-light-text">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="text-center py-4">
+                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 bg-red-500/20">
+                  <AlertCircle className="w-8 h-8 text-red-400" />
+                </div>
+                <p className="text-light-text dark:text-dark-text mb-2">
+                  Are you sure you want to cancel?
+                </p>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-6">
+                  You'll continue to have access until the end of your current billing period. After that, you'll lose access to premium features.
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-3 bg-light-glass dark:bg-dark-glass text-light-text dark:text-dark-text rounded-xl font-medium"
+                >
+                  Keep Subscription
+                </button>
+                <button
+                  onClick={handleCancelSubscription}
+                  disabled={cancelLoading}
+                  className="flex-1 px-4 py-3 rounded-xl font-medium bg-red-500 text-white disabled:opacity-50"
+                >
+                  {cancelLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Cancel Subscription'}
                 </button>
               </div>
             </motion.div>
